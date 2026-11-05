@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UNL Majors Search</title>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:700|Open+Sans:400,600,700" rel="stylesheet">
+<style>
+:root{--red:#ba1f1f;--ink:#111;--mute:#515151;--rule:#c9c8cd;--bg:#fff;--panel:#f4f4f4;--up:#1d6b3a;--down:#ba1f1f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Open Sans",Helvetica,Arial,sans-serif}
+h1,h2,h3,.cond{font-family:"Roboto Condensed","Arial Narrow",sans-serif;font-weight:700;margin:0}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 24px}
+header{border-top:6px solid var(--red);border-bottom:1px solid var(--ink);padding:14px 0 10px;margin-bottom:16px}
+.kicker{color:var(--red);text-transform:uppercase;letter-spacing:.08em;font-size:12px;font-weight:700}
+h1{font-size:34px;line-height:1.1;margin-top:2px}
+.dek{color:var(--mute);margin:4px 0 0}
+.searchbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+input[type=search]{flex:1 1 260px;font:inherit;font-size:17px;padding:10px 12px;border:2px solid var(--ink);border-radius:0;background:#fff}
+select{font:inherit;padding:10px 8px;border:1px solid var(--rule);background:#fff;max-width:100%}
+input:focus,select:focus,button:focus-visible{outline:3px solid var(--red);outline-offset:1px}
+.layout{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;align-items:start}
+@media(max-width:760px){.layout{grid-template-columns:1fr}}
+.count{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);border-bottom:3px solid var(--red);padding-bottom:4px;margin-bottom:0;font-weight:700}
+ul.results{list-style:none;margin:0;padding:0;max-height:560px;overflow:auto;border-bottom:1px solid var(--rule)}
+@media(max-width:760px){ul.results{max-height:340px}}
+.results li{border-bottom:1px solid var(--rule)}
+.results button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:1fr auto;gap:2px 10px;width:100%;padding:10px 6px;cursor:pointer}
+.results button:hover,.results .sel button{background:var(--panel)}
+.results .sel button{box-shadow:inset 4px 0 0 var(--red)}
+.results button:focus-visible{outline:3px solid var(--red);outline-offset:-3px}
+.rname{font-family:"Roboto Condensed",sans-serif;font-weight:700;font-size:17px;line-height:1.2}
+.rmeta{font-size:12px;color:var(--mute);grid-column:1}
+.rnum{grid-row:1/3;grid-column:2;text-align:right;display:flex;flex-direction:column;align-items:flex-end}
+.rnum b{font-family:"Roboto Condensed",sans-serif;font-size:18px}
+.empty{padding:24px 6px;color:var(--mute)}
+mark{background:#fec564;color:inherit}
+.detail{background:#fff;border-top:3px solid var(--red)}
+.detail h2{font-size:28px;line-height:1.1;margin-top:8px}
+.sub{color:var(--mute);font-size:13px;margin:4px 0 10px}
+.tag{display:inline-block;background:var(--ink);color:#fff;font:700 11px "Open Sans";letter-spacing:.05em;text-transform:uppercase;padding:1px 6px;margin-right:4px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.stat{background:var(--panel);padding:8px 10px}
+.stat small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);font-weight:700}
+.stat b{font-family:"Roboto Condensed",sans-serif;font-size:24px;line-height:1.2}
+.up{color:var(--up)}.down{color:var(--down)}
+.chartbox{position:relative}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;font-size:12px;padding:6px 8px;display:none;white-space:nowrap;z-index:2}
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule);padding:2px 4px 2px 8px;font-size:13px;background:#fff}
+.chip i{width:10px;height:10px;display:inline-block}
+.chip button{all:unset;cursor:pointer;padding:0 6px;font-weight:700;color:var(--mute)}
+.chip button:hover{color:var(--red)}
+.btn{font:700 13px "Open Sans";background:#fff;color:var(--red);border:2px solid var(--red);padding:6px 12px;cursor:pointer;text-transform:uppercase;letter-spacing:.04em}
+.btn:hover{background:var(--red);color:#fff}
+.btn[disabled]{opacity:.45;cursor:default;background:#fff;color:var(--red)}
+.related{margin-top:14px;border-top:1px solid var(--rule);padding-top:8px;font-size:13px}
+.related a{color:var(--red);cursor:pointer;margin-right:12px;white-space:nowrap;font-weight:600}
+.note{font-size:12px;color:var(--mute);margin-top:18px;border-top:1px solid var(--rule);padding-top:8px}
+table.dt{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+.dt th,.dt td{padding:3px 6px;border-bottom:1px solid var(--rule);text-align:right}
+.dt th:first-child,.dt td:first-child{text-align:left}
+.dt th{font-family:"Roboto Condensed";text-transform:uppercase;font-size:12px;letter-spacing:.04em;color:var(--mute)}
+details summary{cursor:pointer;font-weight:600;font-size:13px;margin-top:10px}
+.sr{position:absolute;left:-9999px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">University of Nebraska–Lincoln</div>
+    <h1>Majors Search</h1>
+    <p class="dek" id="dek">Search a major to see how many students have enrolled in it each fall.</p>
+  </header>
+
+  <div class="searchbar" role="search">
+    <label class="sr" for="q">Search majors</label>
+    <input id="q" type="search" placeholder="Search majors, e.g. journalism, nursing, engineering…" autocomplete="off">
+    <label class="sr" for="level">Level</label>
+    <select id="level"><option value="">All levels</option></select>
+    <label class="sr" for="college">College</label>
+    <select id="college"><option value="">All colleges</option></select>
+    <label class="sr" for="sort">Sort</label>
+    <select id="sort">
+      <option value="name">A–Z</option>
+      <option value="size">Most students</option>
+      <option value="growth">Fastest growing</option>
+      <option value="decline">Fastest declining</option>
+    </select>
+  </div>
+
+  <div class="layout">
+    <section aria-label="Results">
+      <label style="font-size:13px;display:block;margin-bottom:6px"><input type="checkbox" id="cmpmode"> <b>Compare mode</b> (click to overlay up to 5 programs)</label>
+      <div class="count" id="count" aria-live="polite"></div>
+      <ul class="results" id="results"></ul>
+    </section>
+    <section class="detail" id="detail" aria-live="polite"></section>
+  </div>
+  <p class="note">Source: UNL Institutional Research, Fall headcount by major and degree. A major offered under several degrees (e.g. B.S. and B.A.) appears once per degree. A gap in the line means the program had no enrolled students that fall. Majors whose name changed over time appear as separate entries.</p>
+</div>
+
+<script>
+const COLORS=["#ba1f1f","#1f4e9c","#2a8a4a","#c77d0a","#7a3fa8"];
+let DATA,YEARS,P=[],sel=[],active=null;
+const $=id=>document.getElementById(id);
+const fmt=n=>n==null?"—":n.toLocaleString();
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const last=p=>p.counts[p.counts.length-1];
+const firstIdx=p=>p.counts.findIndex(v=>v!=null);
+const key=p=>p.name+"|"+p.deg;
+function pct(p){const f=p.counts[0],l=last(p);return f&&l!=null?(l-f)/f:null}
+
+fetch("data.json").then(r=>r.json()).then(d=>{
+  DATA=d;YEARS=d.years;P=d.programs;
+  P.forEach((p,i)=>{p.id=i;p.hay=(p.name+" "+p.deg+" "+p.college).toLowerCase()});
+  fill("level",[...new Set(P.map(p=>p.level))]);
+  fill("college",[...new Set(P.map(p=>p.college))].sort());
+  const a=location.hash.slice(1);
+  const hit=P.find(p=>key(p)===decodeURIComponent(a));
+  if(hit){sel=[hit];active=hit}
+  render();show();
+}).catch(()=>{$("results").innerHTML='<li class="empty">Could not load data.</li>'});
+
+function fill(id,vals){$(id).insertAdjacentHTML("beforeend",vals.map(v=>`<option>${esc(v)}</option>`).join(""))}
+["q","level","college","sort"].forEach(id=>$(id).addEventListener("input",render));
+
+function filtered(){
+  const terms=$("q").value.toLowerCase().split(/\s+/).filter(Boolean),lv=$("level").value,co=$("college").value;
+  let r=P.filter(p=>(!lv||p.level===lv)&&(!co||p.college===co)&&terms.every(t=>p.hay.includes(t)));
+  const s=$("sort").value;
+  const g=p=>{const v=pct(p);return v==null?null:v};
+  if(s==="size")r.sort((a,b)=>(last(b)||0)-(last(a)||0));
+  else if(s==="growth"||s==="decline"){
+    const sign=s==="growth"?-1:1;
+    r=r.filter(p=>g(p)!=null&&p.counts[0]>=10).sort((a,b)=>sign*(g(a)-g(b)));
+  }
+  return r;
+}
+function hl(text,terms){let t=esc(text);terms.forEach(w=>{if(w.length>1)t=t.replace(new RegExp("("+w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","ig"),"<mark>$1</mark>")});return t}
+
+function render(){
+  const r=filtered(),terms=$("q").value.toLowerCase().split(/\s+/).filter(Boolean);
+  const note=["growth","decline"].includes($("sort").value)?" (programs with 10+ students in "+YEARS[0]+")":"";
+  $("count").textContent=r.length+" program"+(r.length===1?"":"s")+note;
+  $("results").innerHTML=r.length?r.slice(0,300).map(p=>{
+    const l=last(p),c=pct(p);
+    const tr=c==null?"":`<small class="${c>=0?"up":"down"}">${c>=0?"▲":"▼"} ${Math.abs(Math.round(c*100))}% since ${YEARS[0]}</small>`;
+    return `<li class="${sel.includes(p)?"sel":""}"><button data-id="${p.id}">
+      <span class="rname">${hl(p.name,terms)}</span>
+      <span class="rmeta">${esc(p.deg)} · ${esc(p.college.replace("Grad Studies - ","Grad: "))}</span>
+      <span class="rnum"><b>${l==null?"—":fmt(l)}</b>${tr}</span></button></li>`}).join("")
+    :'<li class="empty">No matching programs. Try a shorter search or clear the filters.</li>';
+}
+$("results").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  const p=P[+b.dataset.id];
+  if(cmpMode&&sel.length)compare(p);else choose(p);
+});
+let cmpMode=false;
+$("cmpmode").addEventListener("change",e=>{cmpMode=e.target.checked;if(!cmpMode&&sel.length>1){sel=[active||sel[0]];render()}show()});
+function choose(p){sel=[p];active=p;history.replaceState(null,"","#"+encodeURIComponent(key(p)));render();show()}
+function compare(p){if(sel.includes(p)){active=p}else if(sel.length<5){sel.push(p);active=p}render();show()}
+function unsel(p){sel=sel.filter(x=>x!==p);active=sel[sel.length-1]||null;render();show()}
+
+function show(){
+  const d=$("detail");
+  if(!sel.length){d.innerHTML=`<h2>Pick a major</h2><p class="sub">Choose a program from the list to see its enrollment trend, ${YEARS[0]}–${YEARS[YEARS.length-1]}.</p>`;return}
+  const p=active||sel[0],l=last(p),c=pct(p);
+  const peakV=Math.max(...p.counts.filter(v=>v!=null)),peakY=YEARS[p.counts.indexOf(peakV)];
+  const fi=firstIdx(p),f=p.counts[fi];
+  const ch=fi>=0&&l!=null&&fi<p.counts.length-1&&f?(l-f)/f:null;
+  const sameMajor=P.filter(x=>x.name===p.name&&x!==p);
+  d.innerHTML=`
+    <h2>${esc(p.name)}</h2>
+    <div class="sub"><span class="tag">${esc(p.deg)}</span><span class="tag" style="background:var(--red)">${esc(p.level)}</span> ${esc(p.college)}</div>
+    <div class="stats">
+      <div class="stat"><small>Fall ${YEARS[YEARS.length-1]}</small><b>${l==null?"None":fmt(l)}</b></div>
+      <div class="stat"><small>Change since ${YEARS[fi]}</small><b class="${ch==null?"":ch>=0?"up":"down"}">${ch==null?"—":(ch>=0?"+":"−")+Math.abs(Math.round(ch*100))+"%"}</b></div>
+      <div class="stat"><small>Peak</small><b>${fmt(peakV)}</b> <span class="sub">${peakY}</span></div>
+    </div>
+    <div class="chartbox" id="chartbox"></div>
+    <div class="legend">${sel.map((s,i)=>`<span class="chip"><i style="background:${COLORS[i]}"></i>${esc(s.name)} (${esc(s.deg)})<button aria-label="Remove ${esc(s.name)}" data-rm="${s.id}">×</button></span>`).join("")}</div>
+    <p class="sub">${cmpMode?(sel.length>=5?"Comparison full (5 max).":"Compare mode is on: click more programs in the list to overlay them (up to 5)."):"Want to overlay other majors? Turn on <b>Compare mode</b> above the list."}</p>
+    ${sameMajor.length?`<div class="related"><b>Same major, other degrees:</b> ${sameMajor.map(x=>`<a data-go="${x.id}">${esc(x.deg)}</a>`).join("")}</div>`:""}
+    <details><summary>View as table</summary>${table()}</details>`;
+  drawChart();
+  d.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>unsel(P[+b.dataset.rm]));
+  d.querySelectorAll("[data-go]").forEach(a=>a.onclick=()=>choose(P[+a.dataset.go]));
+}
+function table(){
+  return `<table class="dt"><tr><th>Fall</th>${sel.map(s=>`<th>${esc(s.name)} (${esc(s.deg)})</th>`).join("")}</tr>${
+    YEARS.map((y,i)=>`<tr><td>${y}</td>${sel.map(s=>`<td>${fmt(s.counts[i])}</td>`).join("")}</tr>`).join("")}</table>`;
+}
+
+function drawChart(){
+  const box=$("chartbox"),W=560,H=300,m={l:44,r:14,t:14,b:30};
+  const vals=sel.flatMap(s=>s.counts.filter(v=>v!=null));
+  const max=niceMax(Math.max(...vals,1));
+  const x=i=>m.l+(W-m.l-m.r)*i/(YEARS.length-1),y=v=>m.t+(H-m.t-m.b)*(1-v/max);
+  let g="";
+  for(let k=0;k<=4;k++){const v=max*k/4;g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="#d9d9dd"/><text x="${m.l-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="#515151">${fmt(Math.round(v))}</text>`}
+  YEARS.forEach((yr,i)=>{g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#515151">${YEARS.length>8&&i%2&&i!==YEARS.length-1?"":"’"+String(yr).slice(2)}</text>`});
+  sel.forEach((s,i)=>{
+    let d="",pen=false;
+    s.counts.forEach((v,j)=>{if(v==null){pen=false;return}d+=(pen?"L":"M")+x(j)+","+y(v);pen=true});
+    g+=`<path d="${d}" fill="none" stroke="${COLORS[i]}" stroke-width="${s===active?3.5:2.5}" stroke-linejoin="round" stroke-linecap="round"/>`;
+    s.counts.forEach((v,j)=>{if(v!=null)g+=`<circle cx="${x(j)}" cy="${y(v)}" r="3.5" fill="#fff" stroke="${COLORS[i]}" stroke-width="2"/>`});
+  });
+  g+=`<line id="cur" y1="${m.t}" y2="${H-m.b}" stroke="#111" stroke-width="1" style="display:none"/><rect id="hit" x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}" fill="transparent"/>`;
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Line chart of fall enrollment by year">${g}</svg><div class="tip" id="tip"></div>`;
+  const svg=box.querySelector("svg"),tip=$("tip"),cur=$("cur");
+  const move=ev=>{
+    const r=svg.getBoundingClientRect(),cx=(ev.touches?ev.touches[0].clientX:ev.clientX);
+    const px=(cx-r.left)/r.width*W;
+    const i=Math.max(0,Math.min(YEARS.length-1,Math.round((px-m.l)/(W-m.l-m.r)*(YEARS.length-1))));
+    cur.setAttribute("x1",x(i));cur.setAttribute("x2",x(i));cur.style.display="";
+    tip.innerHTML=`<b>Fall ${YEARS[i]}</b>`+sel.map((s,k)=>`<div><span style="color:${["#ff8a8a","#8ab4ff","#7fdc9b","#ffc266","#c9a0ee"][k]}">■</span> ${sel.length>1?esc(s.name)+": ":""}${fmt(s.counts[i])}</div>`).join("");
+    tip.style.display="block";
+    const tx=x(i)/W*r.width,tw=tip.offsetWidth;
+    tip.style.left=Math.min(Math.max(0,tx+12),r.width-tw)+"px";tip.style.top="8px";
+  };
+  const hit=$("hit");
+  hit.addEventListener("mousemove",move);hit.addEventListener("touchmove",move,{passive:true});hit.addEventListener("touchstart",move,{passive:true});
+  hit.addEventListener("mouseleave",()=>{tip.style.display="none";cur.style.display="none"});
+}
+function niceMax(v){const p=Math.pow(10,Math.floor(Math.log10(v))),n=v/p;return(n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p}
+
+// Tell a parent page (CMS iframe) how tall we are, so it can resize without scrollbars.
+function postH(){try{parent.postMessage({type:"majors-search-height",height:document.documentElement.scrollHeight},"*")}catch(e){}}
+new ResizeObserver(postH).observe(document.body);
+</script>
+</body>
+</html>
