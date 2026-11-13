@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nebrillion — The Daily Drive</title>
+<meta name="description" content="A daily retro Nebraska football trivia game about the 2023–2025 seasons. Seven plays, 25 seconds each — faster answers break longer runs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  --scarlet:#d00000; --cream:#fdf2d9; --ink:#0b0f1a; --line:#2b3550; --led:#ffb627; --muted:#8b93a7;
+  --t0:#6b7280; --t1:#9aa3b5; --t2:#fdf2d9; --t3:#f2c230; --t4:#ff4040;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ink);color:var(--cream);font-family:'VT323',ui-monospace,monospace;font-size:21px;line-height:1.15}
+button{font:inherit;color:inherit;cursor:pointer}
+#app{max-width:760px;margin:0 auto;background:var(--ink)}
+
+/* ---------- stage ---------- */
+#stage{position:relative;container-type:inline-size;aspect-ratio:16/9;overflow:hidden;background:#5aa9e6}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+#stage::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.07) 0 1px,transparent 1px 3px)}
+#title{position:absolute;left:0;right:0;top:4%;text-align:center;pointer-events:none;transition:opacity .4s,transform .4s}
+#title.gone{opacity:0;transform:translateY(-12%)}
+#title h1{font-family:'Press Start 2P',monospace;font-weight:400;font-size:8cqw;margin:0;letter-spacing:.03em;color:var(--cream);
+  text-shadow:.55cqw .55cqw 0 var(--scarlet),1.1cqw 1.1cqw 0 rgba(0,0,0,.45),-.3cqw 0 0 #fff}
+#title .sub{display:inline-block;font-family:'Press Start 2P',monospace;font-size:2.3cqw;letter-spacing:1.2cqw;margin:2.4cqw 0 0;padding:1cqw 1cqw 1cqw 2.2cqw;
+  color:#fff;background:var(--scarlet);box-shadow:.5cqw .5cqw 0 rgba(0,0,0,.45)}
+#title .tag{display:block;width:max-content;max-width:94%;margin:2cqw auto 0;font-size:3.1cqw;letter-spacing:.25cqw;color:var(--cream);
+  background:rgba(11,15,26,.78);padding:.4cqw 1.6cqw;border:.3cqw solid rgba(253,242,217,.25)}
+#banner{position:absolute;left:0;right:0;top:44%;text-align:center;font-family:'Press Start 2P',monospace;font-size:6cqw;
+  pointer-events:none;opacity:0;color:var(--cream);text-shadow:.5cqw .5cqw 0 #000,-.3cqw -.3cqw 0 #000}
+#banner.show{animation:pop 1.7s steps(12) forwards}
+#banner.hold{animation:popHold .5s steps(6) forwards}
+#banner.t0{color:#9aa3b5}#banner.t1{color:var(--t1)}#banner.t2{color:var(--t2)}#banner.t3{color:var(--t3)}#banner.t4,#banner.td{color:var(--t4)}
+@keyframes pop{0%{opacity:0;transform:scale(.4)}15%{opacity:1;transform:scale(1.15)}25%{transform:scale(1)}80%{opacity:1}100%{opacity:0}}
+@keyframes popHold{0%{opacity:0;transform:scale(.4)}60%{opacity:1;transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
+#mute{position:absolute;right:1.4cqw;bottom:1.4cqw;z-index:3;font-family:'Press Start 2P',monospace;font-size:1.7cqw;
+  background:rgba(11,15,26,.7);border:.3cqw solid rgba(253,242,217,.4);padding:1cqw 1.2cqw;color:var(--cream)}
+
+/* ---------- scoreboard ---------- */
+#board{display:grid;grid-template-columns:repeat(4,1fr);background:#050608;border-top:4px solid var(--scarlet);border-bottom:4px solid var(--scarlet)}
+#board[hidden]{display:none}
+#board div{padding:6px 4px 7px;text-align:center;border-right:2px solid #1b1f2a}
+#board div:last-child{border-right:0}
+#board small{display:block;font-size:15px;letter-spacing:2px;color:var(--muted)}
+#board b{display:block;font-family:'Press Start 2P',monospace;font-weight:400;font-size:clamp(11px,2.4vw,16px);color:var(--led);
+  text-shadow:0 0 6px rgba(255,182,39,.55);margin-top:3px}
+#board b.warn{color:#ff4b4b;text-shadow:0 0 6px rgba(255,60,60,.7)}
+
+/* ---------- panel ---------- */
+#panel{background:linear-gradient(#141b2d,#0b0f1a 70%);padding:18px 20px 22px;min-height:290px}
+.scr[hidden]{display:none}
+.big{display:block;width:100%;font-family:'Press Start 2P',monospace;font-size:clamp(13px,3.2vw,20px);letter-spacing:.25em;
+  padding:20px 10px;background:#141c33;color:var(--cream);border:4px solid var(--scarlet);box-shadow:0 0 0 2px #000,0 0 18px rgba(208,0,0,.45),inset 0 -6px 0 rgba(0,0,0,.35)}
+.big:hover:not(:disabled),.big:focus-visible{background:var(--scarlet);outline:none}
+.big:disabled{opacity:.45;cursor:default;box-shadow:none}
+.mini{font-size:18px;letter-spacing:3px;padding:8px 12px;background:transparent;border:2px solid var(--line);color:#c9cfdd}
+.mini:hover,.mini:focus-visible{border-color:var(--cream);color:#fff;outline:none}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:12px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.meta{letter-spacing:3px;color:var(--muted)}
+details{margin:0 0 14px}
+summary{cursor:pointer;letter-spacing:4px;color:#c9cfdd;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:'▶ ';font-size:14px}
+details[open] summary::before{content:'▼ '}
+.how{margin-top:10px;padding:12px 14px;border:2px dashed var(--line);color:#d9dceb}
+.how p{margin:0 0 8px}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;margin-top:10px}
+.chip{display:inline-block;padding:2px 8px;border:2px solid currentColor;letter-spacing:2px;font-size:18px;white-space:nowrap}
+.c0{color:var(--t0)}.c1{color:var(--t1)}.c2{color:var(--t2)}.c3{color:var(--t3)}.c4{color:var(--t4)}
+.src{margin:10px 0 0;color:var(--muted)}
+
+/* play */
+.playhead{display:flex;justify-content:space-between;letter-spacing:4px;color:var(--muted);font-size:18px}
+#pWorth{color:var(--led)}
+.timer{height:10px;background:#1b2235;border:2px solid #000;margin:6px 0 14px}
+#tbar{height:100%;width:100%;background:var(--led);transition:width .1s linear}
+#tbar.warn{background:#ff4040}
+#prompt{font-family:'Press Start 2P',monospace;font-weight:400;font-size:clamp(13px,3vw,19px);line-height:1.55;margin:0 0 6px;color:#fff}
+.count{color:var(--muted);letter-spacing:2px;margin-bottom:12px}
+form{display:flex;gap:8px}
+#ans{flex:1;min-width:0;font:inherit;font-size:26px;padding:10px 12px;background:#05070d;color:#fff;border:3px solid var(--line);outline:none;text-transform:uppercase;border-radius:0}
+#ans:focus{border-color:var(--cream)}
+#ans.shake{animation:shake .3s steps(4)}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+#hike{font-family:'Press Start 2P',monospace;font-size:13px;padding:0 16px;background:var(--scarlet);border:3px solid #000;color:#fff}
+#hike:hover{background:#ff1a1a}
+.fb{min-height:26px;margin-top:10px;letter-spacing:2px;color:#ff8080}
+
+/* result */
+.res-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px}
+.res-head .chip{font-size:22px}
+.res-gain{font-family:'Press Start 2P',monospace;font-size:clamp(14px,3vw,20px)}
+#rLine{font-size:26px;margin:8px 0 4px;color:#fff}
+#rNote{color:#d9dceb;margin:6px 0 8px;line-height:1.3}
+#rMore{color:var(--muted);margin:6px 0 16px;line-height:1.6}
+#rMore .chip{font-size:17px;margin:2px 4px 2px 0}
+
+/* end */
+#eHead{font-family:'Press Start 2P',monospace;font-weight:400;font-size:clamp(16px,4vw,26px);margin:0 0 8px;color:var(--t4);text-shadow:3px 3px 0 #000}
+#eSub{margin:0 0 12px;font-size:23px}
+#eList{list-style:none;padding:0;margin:0 0 14px;border-top:2px solid var(--line)}
+#eList li{display:flex;gap:10px;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:2px solid var(--line)}
+#eList .q{color:var(--muted);font-size:18px}
+#eList .a{color:#fff}
+#shareText{white-space:pre-wrap;background:#05070d;border:2px solid var(--line);padding:10px;font:inherit;margin:10px 0 0}
+.note{color:var(--muted);letter-spacing:2px;margin-top:8px;min-height:22px}
+
+/* archive */
+#archList{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:12px 0 14px}
+#archList button{padding:10px 6px;background:#141c33;border:2px solid var(--line);letter-spacing:2px}
+#archList button:hover{border-color:var(--cream)}
+#archList .done{color:var(--muted)}
+h2.sec{font-family:'Press Start 2P',monospace;font-weight:400;font-size:16px;letter-spacing:4px;margin:0}
+
+@media (max-width:480px){
+  html,body{font-size:19px}
+  #panel{padding:14px 14px 18px}
+  .big{padding:16px 8px}
+  #ans{font-size:22px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="cv" width="384" height="216" aria-label="Pixel-art Memorial Stadium with a Nebraska running back running toward the camera"></canvas>
+    <div id="title">
+      <h1>NEBRILLION</h1>
+      <div class="sub">2023 · 2024 · 2025</div>
+      <div class="tag">7 plays · 25 seconds each · faster answers run farther</div>
+    </div>
+    <div id="banner" aria-live="polite"></div>
+    <button id="mute" title="Toggle sound" aria-label="Toggle sound">♪ ON</button>
+  </div>
+
+  <div id="board" hidden>
+    <div><small>PLAY</small><b id="bPlay">1/7</b></div>
+    <div><small>BALL ON</small><b id="bBall">NEB 25</b></div>
+    <div><small>TO GO</small><b id="bGo">75</b></div>
+    <div><small>CLOCK</small><b id="bClock">:25</b></div>
+  </div>
+
+  <div id="panel">
+    <!-- HOME -->
+    <section id="scr-home" class="scr">
+      <details id="how">
+        <summary>HOW TO PLAY</summary>
+        <div class="how">
+          <p>You take the handoff at your own 25. You get <b>7 plays</b> to punch it into the end zone.</p>
+          <p>Every play is a question about Nebraska football over the last three seasons (2023–2025): who carried the ball, who led in tackles, how many games the Huskers won, how they did against ranked teams and more. You have <b>25 seconds</b> on each one.</p>
+          <p><b>The faster you answer, the farther you run.</b> A wrong guess costs 3 seconds, but you get a hint: higher, lower, more wins, fewer losses. If the clock hits zero, you're sacked.</p>
+          <p>Type records like <b>7-6</b>. Type numbers as digits or words. Last names work for players.</p>
+          <div class="legend">
+            <span class="chip c4">HOUSE CALL +18–22</span>
+            <span class="chip c3">BREAKAWAY +12–17</span>
+            <span class="chip c2">SOLID RUN +6–11</span>
+            <span class="chip c1">SHORT GAIN +1–5</span>
+            <span class="chip c0">SACK −3</span>
+          </div>
+          <p class="src" id="asOf"></p>
+        </div>
+      </details>
+      <button id="btnStart" class="big">▶ BEGIN DRIVE ◀</button>
+      <div class="row">
+        <div class="meta" id="meta">DRIVE #1 · STREAK 0</div>
+        <div class="btns">
+          <button class="mini" data-go="archive">ARCHIVE ↺</button>
+          <button class="mini" data-go="unlimited">UNLIMITED ∞</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLAY -->
+    <section id="scr-play" class="scr" hidden>
+      <div class="playhead"><span id="pNum">PLAY 1 OF 7</span><span id="pWorth">WORTH +22 YDS</span></div>
+      <div class="timer"><div id="tbar"></div></div>
+      <h2 id="prompt"></h2>
+      <div class="count" id="pCount"></div>
+      <form id="form" autocomplete="off">
+        <input id="ans" type="text" maxlength="40" placeholder="YOUR ANSWER" aria-label="Your answer" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button id="hike" type="submit">HIKE</button>
+      </form>
+      <div class="fb" id="fb" aria-live="polite"></div>
+    </section>
+
+    <!-- RESULT -->
+    <section id="scr-result" class="scr" hidden>
+      <div class="res-head"><span id="rTier" class="chip"></span><span id="rGain" class="res-gain"></span></div>
+      <div id="rLine"></div>
+      <div id="rNote"></div>
+      <div id="rMore"></div>
+      <button id="btnNext" class="big" disabled>NEXT PLAY ▶</button>
+    </section>
+
+    <!-- END -->
+    <section id="scr-end" class="scr" hidden>
+      <h2 id="eHead"></h2>
+      <p id="eSub"></p>
+      <ul id="eList"></ul>
+      <button id="btnShare" class="big">COPY RESULT</button>
+      <pre id="shareText" hidden></pre>
+      <div class="note" id="eNote"></div>
+      <div class="row">
+        <div class="meta" id="eMeta"></div>
+        <div class="btns">
+          <button class="mini" data-go="home">HOME</button>
+          <button class="mini" data-go="archive">ARCHIVE ↺</button>
+          <button class="mini" data-go="unlimited">UNLIMITED ∞</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ARCHIVE -->
+    <section id="scr-archive" class="scr" hidden>
+      <h2 class="sec">PAST DRIVES</h2>
+      <div id="archList"></div>
+      <button class="mini" data-go="home">◀ BACK</button>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* =========================================================
+   CONFIG
+   ========================================================= */
+const EPOCH = Date.UTC(2026, 10, 1);   // Drive #1 = Nov 1, 2026 (month is 0-based)
+const PLAYS = 7, SECONDS = 25, START = 25, PENALTY = 3, SACK = -3;
+const SHARE_URL = '';                  // optional: link appended to shared results
+const TIERS = [
+  {name:'SACKED',     emoji:'⬛'},
+  {name:'SHORT GAIN', emoji:'⬜'},
+  {name:'SOLID RUN',  emoji:'🟨'},
+  {name:'BREAKAWAY',  emoji:'🟧'},
+  {name:'HOUSE CALL', emoji:'🟥'},
+];
+const yardsFor = t => Math.max(1, Math.min(22, Math.round(t * 0.88)));   // 25s left = +22, 10s = +9
+const tierFor  = y => y < 0 ? 0 : y >= 18 ? 4 : y >= 12 ? 3 : y >= 6 ? 2 : 1;
+
+/* =========================================================
+   QUESTIONS — Nebraska football, 2023–2025 seasons
+   Results, rankings at game time and season stats: ESPN.
+   rec: [wins, losses] · num: number · any: "alias|alias, other|alias"
+   ========================================================= */
+const MSU='michigan state|msu|spartans', IOWA='iowa|hawkeyes', COLO='colorado|buffaloes|buffs|cu', MICH='michigan|wolverines|um',
+      IU='indiana|hoosiers|iu', OSU='ohio state|osu|buckeyes', USC='usc|trojans|southern cal', UTAH='utah|utes', ILL='illinois|illini|fighting illini',
+      MD='maryland|terps|terrapins', NW='northwestern|wildcats', UCLA='ucla|bruins';
+const RAW = [
+  /* ---- running backs ---- */
+  {q:"Which running back led Nebraska in rushing in 2023?", any:'anthony grant|grant',
+   note:"Anthony Grant ran for 413 yards. QB Heinrich Haarberg actually led the team with 477, and Emmett Johnson had 411."},
+  {q:"Who led Nebraska in rushing in 2024?", any:'dante dowdell|dowdell',
+   note:"Dante Dowdell ran for 614 yards, just ahead of Emmett Johnson's 598. Dowdell also led the team with 72 points."},
+  {q:"Who led Nebraska in rushing last season (2025)?", any:'emmett johnson|emmett|johnson',
+   note:"Emmett Johnson ran for 1,451 yards. The next-best Husker had 147."},
+  {q:"How many 1,000-yard rushers did Nebraska have from 2023 to 2025?", num:1,
+   note:"One: Emmett Johnson, with 1,451 yards in 2025."},
+  /* ---- quarterbacks ---- */
+  {q:"Who led Nebraska in passing yards in 2023?", any:'heinrich haarberg|haarberg',
+   note:"Heinrich Haarberg threw for 967 yards. Chubba Purdy (382) and Jeff Sims (282) also took snaps."},
+  {q:"Name a quarterback who threw a pass for Nebraska in 2023", any:'heinrich haarberg|haarberg,chubba purdy|purdy,jeff sims|sims',
+   note:"Three QBs threw passes in 2023: Heinrich Haarberg, Chubba Purdy and Jeff Sims."},
+  {q:"Who was Nebraska's starting quarterback as a true freshman in 2024?", any:'dylan raiola|raiola',
+   note:"Dylan Raiola threw for 2,819 yards in 2024."},
+  {q:"Who was Nebraska's No. 2 passer in 2025, behind Dylan Raiola?", any:'tj lateef|lateef|t j lateef',
+   note:"TJ Lateef threw for 904 yards. Raiola had 2,000."},
+  /* ---- receivers ---- */
+  {q:"Who led Nebraska in receiving yards in 2023?", any:'billy kemp iv|billy kemp|kemp',
+   note:"Billy Kemp IV had 310 yards. Thomas Fidone II had 260 and Jaylen Lloyd 237."},
+  {q:"Who led Nebraska in receiving yards in 2024?", any:'jahmal banks|banks',
+   note:"Jahmal Banks had 587 yards. Isaiah Neyor had 455 and Jacory Barney Jr. 447."},
+  {q:"Who led Nebraska in receiving yards last season (2025)?", any:'nyziah hunter|hunter',
+   note:"Nyziah Hunter had 617 yards. Jacory Barney Jr. had 484 and Dane Key 452."},
+  /* ---- defense & special teams ---- */
+  {q:"Who led Nebraska in tackles in both 2023 and 2024?", any:'isaac gifford|gifford',
+   note:"Isaac Gifford had 86 tackles in 2023 and 73 in 2024."},
+  {q:"Who led Nebraska in tackles last season (2025)?", any:'javin wright|wright',
+   note:"Javin Wright had 86 tackles. DeShon Singleton had 70."},
+  {q:"Who led Nebraska in scoring last season (2025)?", any:'kyle cunanan|cunanan',
+   note:"Kicker Kyle Cunanan scored 93 points, just ahead of Emmett Johnson's 90."},
+  {q:"Who was Nebraska's punter in 2023 and 2024?", any:'brian buschini|buschini',
+   note:"Brian Buschini punted both seasons. Archie Wilson took over in 2025."},
+  /* ---- wins & records ---- */
+  {q:"How many wins did Nebraska have last season (2025)?", num:7,
+   note:"Seven. Nebraska went 7-6, ending with a Las Vegas Bowl loss to Utah."},
+  {q:"How many total wins did Nebraska have over the 2023, 2024 and 2025 seasons?", num:19,
+   note:"19, for a 19-19 record: 5-7, then 7-6, then 7-6."},
+  {q:"How many ranked opponents has Nebraska beaten over the past three seasons (2023–2025)?", num:0,
+   note:"Zero. Nebraska went 0-9 against AP-ranked teams from 2023 to 2025."},
+  {q:"How many ranked opponents did Nebraska play from 2023 to 2025?", num:9,
+   note:"Nine, and Nebraska lost all nine: three in 2023, three in 2024 and three in 2025."},
+  {q:"What was Nebraska's record in 2023?", rec:[5,7],
+   note:"5-7. The Huskers were 5-3, then lost their last four games, all by 7 points or fewer."},
+  {q:"What was Nebraska's record in 2024?", rec:[7,6],
+   note:"7-6. It was Nebraska's first winning season and first bowl since 2016."},
+  {q:"What was Nebraska's home record at Memorial Stadium from 2023 to 2025?", rec:[13,8],
+   note:"13-8: 4-3 in 2023, 5-2 in 2024 and 4-3 in 2025."},
+  {q:"What was Nebraska's record in true road games from 2023 to 2025?", rec:[4,10],
+   note:"4-10. The road wins: Illinois (2023), Purdue (2024), Maryland and UCLA (2025)."},
+  {q:"What was Nebraska's Big Ten record from 2023 to 2025?", rec:[10,17],
+   note:"10-17: 3-6 in 2023, 3-6 in 2024 and 4-5 in 2025."},
+  /* ---- opponents & bowls ---- */
+  {q:"Name a bowl game Nebraska played in from 2023 to 2025", any:'pinstripe bowl|pinstripe,las vegas bowl|las vegas|vegas bowl|vegas',
+   note:"The 2024 Pinstripe Bowl (won 20-15 over Boston College) and the 2025 Las Vegas Bowl (lost 44-22 to Utah)."},
+  {q:"Who did Nebraska beat in the 2024 Pinstripe Bowl?", any:'boston college|bc|eagles',
+   note:"Boston College, 20-15 at Yankee Stadium."},
+  {q:"Which team beat Nebraska in all three seasons from 2023 to 2025?", any:IOWA,
+   note:"Iowa: 13-10 in 2023, 13-10 in 2024 and 40-16 in 2025."},
+  {q:"Name a ranked team that beat Nebraska from 2023 to 2025", any:[COLO,MICH,IOWA,ILL,IU,OSU,USC,UTAH].join(','),
+   note:"The nine ranked losses: Colorado, Michigan and Iowa (2023); Illinois, Indiana and Ohio State (2024); Michigan, USC and Utah (2025)."},
+  {q:"Name a Big Ten team Nebraska beat last season (2025)", any:[MSU,MD,NW,UCLA].join(','),
+   note:"Four Big Ten wins in 2025: Michigan State, Maryland, Northwestern and UCLA."},
+  {q:"How many points did Nebraska score against Akron in 2025?", num:68,
+   note:"68, in a 68-0 win. It was Nebraska's only shutout of the three seasons."},
+  {q:"Which team beat Nebraska 56-7 in 2024?", any:IU,
+   note:"Indiana, in Bloomington. It was Nebraska's most lopsided loss of the three seasons."},
+];
+
+/* =========================================================
+   ANSWER CHECKING
+   ========================================================= */
+const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+  .replace(/&/g,' and ').replace(/[^a-z0-9 ]+/g,'').replace(/\s+/g,' ').trim().replace(/^(the|a|an) /,'');
+const key = s => norm(s).replace(/ /g,'');
+function variants(k){
+  const v = new Set([k]);
+  if (k.length > 3){ if (k.endsWith('es')) v.add(k.slice(0,-2)); if (k.endsWith('s')) v.add(k.slice(0,-1)); }
+  return [...v];
+}
+const UPPER = {usc:'USC',ucla:'UCLA',niu:'NIU',osu:'OSU',msu:'MSU'};
+const titleCase = s => UPPER[s] || s.replace(/(^|[\s-])([a-z])/g,(m,a,b)=>a+b.toUpperCase());
+
+const QS = RAW.map(r => {
+  const o = {q:r.q, note:r.note};
+  if (r.rec){ o.type='rec'; o.rec=r.rec; o.label=r.rec.join('-'); }
+  else if (r.num!==undefined){ o.type='num'; o.num=r.num; o.label=String(r.num); }
+  else {
+    o.type='any';
+    o.items = r.any.split(',').map(item => {
+      const names=item.split('|').map(x=>x.trim());
+      const keys=new Set(); names.forEach(n=>variants(key(n)).forEach(k=>keys.add(k)));
+      return {label:titleCase(names[0]), keys, base:names.map(key)};
+    });
+  }
+  return o;
+});
+
+function lev(a,b){
+  if (Math.abs(a.length-b.length) > 2) return 9;
+  const m=a.length,n=b.length; let prev=Array.from({length:n+1},(_,j)=>j);
+  for (let i=1;i<=m;i++){ const cur=[i]; for(let j=1;j<=n;j++){ cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1)); } prev=cur; }
+  return prev[n];
+}
+const WORDS = {zero:0,none:0,no:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,
+  thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,oh:0};
+function nums(s){
+  const t = s.toLowerCase().replace(/[a-z]+/g, w => (w in WORDS) ? ' '+WORDS[w]+' ' : ' ');
+  return (t.match(/\d+/g)||[]).map(Number);
+}
+// returns {ok, label} | {ok:false, hint, free}
+function check(q, input){
+  if (q.type==='rec'){
+    const n=nums(input);
+    if (n.length<2) return {ok:false, free:true, hint:'TYPE A RECORD LIKE 7-6.'};
+    const [w,l]=n, [W,L]=q.rec;
+    if (w===W && l===L) return {ok:true, label:q.label};
+    if (w!==W) return {ok:false, hint: w<W ? 'MORE WINS THAN THAT.' : 'FEWER WINS THAN THAT.'};
+    return {ok:false, hint: 'WINS ARE RIGHT. ' + (l<L ? 'MORE LOSSES.' : 'FEWER LOSSES.')};
+  }
+  if (q.type==='num'){
+    const n=nums(input);
+    if (!n.length) return {ok:false, free:true, hint:'TYPE A NUMBER.'};
+    if (n[0]===q.num) return {ok:true, label:q.label};
+    return {ok:false, hint: n[0]<q.num ? 'HIGHER.' : 'LOWER.'};
+  }
+  const k=key(input); if(!k) return {ok:false, free:true, hint:''};
+  const iv=variants(k);
+  for (const it of q.items) if (iv.some(v=>it.keys.has(v))) return {ok:true, label:it.label, item:it};
+  if (k.length>=5){
+    const allow=k.length>=9?2:1; let best=null, bd=99;
+    for (const it of q.items) for (const b of it.base){ if(b.length<4) continue; const d=lev(k,b); if(d<=allow&&d<bd){bd=d;best=it;} }
+    if (best) return {ok:true, label:best.label, item:best};
+  }
+  return {ok:false, hint:'NOT IT.'};
+}
+
+/* =========================================================
+   DAILY SELECTION / STORAGE
+   ========================================================= */
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function shuffled(n, r){ const a=[...Array(n).keys()]; for(let i=n-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+const permCache={};
+function dailySet(no){
+  const N=QS.length, out=[]; let idx=(no-1)*PLAYS;
+  while(out.length<PLAYS){ const cyc=Math.floor(idx/N); const p=permCache[cyc]||(permCache[cyc]=shuffled(N,mulberry(cyc*7919+2027))); const v=p[idx%N]; if(!out.includes(v)) out.push(v); idx++; }
+  return out;
+}
+function todayNo(){ const d=new Date(); return Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-EPOCH)/86400000)+1; }
+const TODAY = Math.max(1, todayNo());
+const STORE_KEY='nebrillion.3yr.v1';
+const load = () => { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e){ return {}; } };
+const save = v => { try { localStorage.setItem(STORE_KEY, JSON.stringify(v)); } catch(e){} };
+function streakNow(){ const s=load(); return (s.last===TODAY||s.last===TODAY-1) ? (s.streak||0) : 0; }
+
+/* =========================================================
+   SOUND (tiny 8-bit beeps)
+   ========================================================= */
+let AC=null, muted=!!load().muted;
+function tone(f,d,type='square',vol=.05,when=0){
+  if (muted) return;
+  try{
+    AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+    const t=AC.currentTime+when, o=AC.createOscillator(), g=AC.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,t); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g).connect(AC.destination); o.start(t); o.stop(t+d+.03);
+  }catch(e){}
+}
+const sfx = {
+  hike(){ tone(392,.07); tone(392,.07,'square',.05,.12); },
+  good(t){ [523,659,784,1046].slice(0,Math.max(1,t)).forEach((f,i)=>tone(f,.12,'square',.05,i*.07)); },
+  bad(){ tone(150,.16,'square',.05); },
+  tick(){ tone(990,.04,'square',.025); },
+  whistle(){ tone(2300,.1,'sine',.06); tone(2300,.28,'sine',.06,.14); },
+  td(){ [523,659,784,1046,784,1046,1318].forEach((f,i)=>tone(f,.2,'square',.055,i*.13)); },
+};
+
+/* =========================================================
+   PIXEL ART — sprites & font
+   ========================================================= */
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const W=384, H=216;
+ctx.imageSmoothingEnabled=false;
+
+const HEAD_F=["....HHHH....","...HHXXHH...","..HHHXXHHH..","..HSSSSSSH..","..HMMMMMMH..","..HSMSSMSH..","...HMMMMH..."];
+const HEAD_B=["....HHHH....","...HHXXHH...","..HHHXXHHH..","..HHHXXHHH..","..HHHHHHHH..","...HHHHHH...","....SSSS...."];
+const BODY_BALL=["..JJJSSJJJ..",".JJJJJJJJJJ.","SJJJNNNJBBJS","SJJJNJNBbBJS",".SJJNNNJBBS."];
+const BODY_ARMS=["..JJJSSJJJ..","SJJJJJJJJJJS","SJJJNNNJJJJS",".JJJNJNJJJJ.","..JJNNNJJJ.."];
+const BODY_BACK=["..JJJJJJJJ..","SJJNNJJNNJJS","SJJJNJJJNJJS",".JJNNJJNNJJ.","..JJJJJJJJ.."];
+const LEGS={
+  a:["...PPPPPP...","...PP..PP...","...OO..KK...","..KKK......."],
+  b:["...PPPPPP...","...PP..PP...","...KK..OO...",".......KKK.."],
+  s:["...PPPPPP...","...PP..PP...","...OO..OO...","..KKK..KKK.."],
+};
+const FRAMES={};
+for (const l of ['a','b','s']){
+  FRAMES['rb'+l]=[...HEAD_F,...BODY_BALL,...LEGS[l]];   // ball carrier, facing camera
+  FRAMES['f'+l] =[...HEAD_F,...BODY_ARMS,...LEGS[l]];   // facing camera, no ball
+  FRAMES['b'+l] =[...HEAD_B,...BODY_BACK,...LEGS[l]];   // back to camera
+}
+const SKINS=['#f1c27d','#c68642','#8d5524','#5c3a1e','#e0ac69'];
+const NEB ={H:'#f4f4f4',X:'#d00000',M:'#8f8f8f',J:'#d00000',N:'#ffffff',P:'#f4f4f4',O:'#d00000',K:'#141414',B:'#7a3b12',b:'#ffffff'};
+const AWAY={H:'#1d2b64',X:'#f2c230',M:'#c9c9c9',J:'#f4f4f4',N:'#1d2b64',P:'#f2c230',O:'#1d2b64',K:'#141414',B:'#7a3b12',b:'#ffffff'};
+const PALS={};
+SKINS.forEach((s,i)=>{ PALS['neb'+i]={...NEB,S:s}; PALS['away'+i]={...AWAY,S:s}; });
+const sprCache={};
+function spr(frame,pal){
+  const id=frame+'|'+pal; if (sprCache[id]) return sprCache[id];
+  const c=document.createElement('canvas'); c.width=14; c.height=18; const g=c.getContext('2d'); const p=PALS[pal], F=FRAMES[frame];
+  const on=(x,y)=>{ const r=F[y]; const ch=r&&r[x]; return !!(ch&&ch!=='.'&&p[ch]); };
+  g.fillStyle='#0b0b0b';
+  for(let y=-1;y<=16;y++) for(let x=-1;x<=12;x++) if(!on(x,y)&&(on(x-1,y)||on(x+1,y)||on(x,y-1)||on(x,y+1))) g.fillRect(x+1,y+1,1,1);
+  F.forEach((row,y)=>{ for(let x=0;x<12;x++) if(on(x,y)){ g.fillStyle=p[row[x]]; g.fillRect(x+1,y+1,1,1);} });
+  return sprCache[id]=c;
+}
+
+const FONT={
+  '0':'111101101101111','1':'010110010010111','2':'111001111100111','3':'111001111001111','4':'101101111001001',
+  '5':'111100111001111','6':'111100111101111','7':'111001001001001','8':'111101111101111','9':'111101111001111',
+  A:'010101111101101',B:'110101110101110',C:'111100100100111',D:'110101101101110',E:'111100110100111',F:'111100110100100',
+  G:'111100101101111',H:'101101111101101',I:'111010010010111',K:'101101110101101',L:'100100100100111',M:'101111111101101',
+  N:'101111111111101',O:'111101101101111',P:'110101110100100',R:'110101110101101',S:'111100111001111',T:'111010010010010',
+  U:'101101101101111',V:'101101101101010',W:'101101111111101',Y:'101101010010010',' ':'000000000000000','-':'000000111000000'
+};
+function pxText(str,x,y,sc,color,g=ctx){
+  g.fillStyle=color;
+  for (const ch of str){ const f=FONT[ch]; if(f){ for(let i=0;i<15;i++) if(f[i]==='1') g.fillRect(Math.round(x+(i%3)*sc),Math.round(y+Math.floor(i/3)*sc),Math.ceil(sc),Math.ceil(sc)); } x+=4*sc; }
+}
+const textW = (s,sc) => (s.length*4-1)*sc;
+const flatCache={};
+function flatText(str,color){ // small canvas used for perspective ground text
+  const id=str+color; if(flatCache[id]) return flatCache[id];
+  const c=document.createElement('canvas'); c.width=textW(str,1); c.height=5; pxText(str,0,0,1,color,c.getContext('2d'));
+  return flatCache[id]=c;
+}
+
+/* =========================================================
+   MEMORIAL STADIUM BACKDROP (pre-rendered, two crowd frames)
+   ========================================================= */
+const ST_H=106, BOARD={x:128,y:3,w:128,h:30};
+function buildStadium(raised){
+  const c=document.createElement('canvas'); c.width=W; c.height=ST_H; const g=c.getContext('2d'); const r=mulberry(1923);
+  const crowd=(x0,x1,y0,y1,dim)=>{
+    for(let y=y0;y<y1;y+=4){
+      g.fillStyle=dim?'#3a2a2e':'#4a3236'; g.fillRect(x0,y+3,x1-x0,1);
+      for(let x=x0+((y/4)%2?1:0);x<x1;x+=3){
+        const a=r(), s=r(), u=r(), arm=r(); if(a<0.05) continue;
+        const body=a<0.72?(dim?'#a80000':'#d00000'):a<0.9?'#f4f4f4':a<0.95?'#fdf2d9':'#1b1b1b';
+        const up=raised&&u<0.5?1:0;
+        g.fillStyle=SKINS[Math.floor(s*5)]; g.fillRect(x,y-up,2,1);
+        g.fillStyle=body; g.fillRect(x,y+1-up,2,2);
+        if(up&&arm<.5){ g.fillStyle=SKINS[Math.floor(s*5)]; g.fillRect(x+(arm<.25?0:1),y-2-up,1,1); }
+      }
+    }
+  };
+  // light towers
+  for (const x of [84,292]){ g.fillStyle='#4d5466'; g.fillRect(x+6,6,3,30); g.fillStyle='#2b303c'; g.fillRect(x-3,0,21,9);
+    g.fillStyle='#fff6cf'; for(let i=0;i<5;i++) for(let j=0;j<2;j++) g.fillRect(x-2+i*4,1+j*4,3,3); }
+  // west (left) and east (right) stadium suite towers
+  const tower=(x0,w,top,label)=>{
+    g.fillStyle='#d8cfbe'; g.fillRect(x0,top,w,60-top+10);
+    g.fillStyle='#b9ae9a'; g.fillRect(x0,top,w,3);
+    for(let y=top+6;y<62;y+=8){ g.fillStyle='#5f7fa3'; g.fillRect(x0+3,y,w-6,4); g.fillStyle='#8fb0d0'; for(let x=x0+4;x<x0+w-4;x+=6) g.fillRect(x,y,2,1); }
+    g.fillStyle='#d00000'; g.fillRect(x0,top+3,w,1);
+    pxText(label, x0+Math.round((w-textW(label,1))/2), top-7, 1, '#ffffff', g);
+  };
+  tower(0,74,14,'WEST'); tower(W-74,74,20,'EAST');
+  // north upper deck
+  g.fillStyle='#2a1e22'; g.fillRect(70,40,W-140,3);
+  crowd(70,W-70,44,62,true);
+  // concourse band
+  g.fillStyle='#6b7080'; g.fillRect(0,62,W,8); g.fillStyle='#545966'; g.fillRect(0,69,W,1);
+  const mem='MEMORIAL STADIUM'; pxText(mem, Math.round((W-textW(mem,1))/2), 64, 1, '#ffffff', g);
+  for (const x of [20,W-40]) pxText('N', x, 64, 1, '#d00000', g);
+  // lower bowl
+  crowd(0,W,72,98,false);
+  // wall
+  g.fillStyle='#9a0000'; g.fillRect(0,98,W,8); g.fillStyle='#d00000'; g.fillRect(0,98,W,1);
+  for(let x=6;x<W;x+=96) pxText('GO BIG RED', x, 100, 1, '#fdf2d9', g);
+  // HuskerVision board (screen content is drawn live)
+  g.fillStyle='#4d5466'; g.fillRect(BOARD.x+20,BOARD.y+BOARD.h,4,10); g.fillRect(BOARD.x+BOARD.w-24,BOARD.y+BOARD.h,4,10);
+  g.fillStyle='#d00000'; g.fillRect(BOARD.x-3,BOARD.y-3,BOARD.w+6,BOARD.h+6);
+  g.fillStyle='#111'; g.fillRect(BOARD.x-1,BOARD.y-1,BOARD.w+2,BOARD.h+2);
+  return c;
+}
+const STADIUM=[buildStadium(false),buildStadium(true)];
+
+/* =========================================================
+   SCENE — camera stands downfield; the runner comes at you.
+   g = yards from Nebraska's scoring goal line (0 = goal, 100 = own goal)
+   x = yards left/right of the field's centre line
+   ========================================================= */
+const HY=106, PA=900, PCX=160, PS=55, HALF=26.67;
+const R=Math.random, clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,t)=>a+(b-a)*t;
+const S={phase:'idle',los:START,camG:43,rb:null,ol:[],def:[],clock:0,t:0,parts:[],fade:0,cheer:0,
+  clouds:[{x:20,y:12,w:40},{x:150,y:22,w:30},{x:250,y:6,w:50},{x:340,y:28,w:26}]};
+function proj(g,x){ const z=g-S.camG; if(z<0.7) return null; return {x:W/2+x*PCX/z, y:HY+PA/z, s:PS/z, z}; }
+const yAt = g => HY + PA/Math.max(0.7, g-S.camG);
+
+function setupFormation(los){
+  S.los=los; S.phase='idle'; S.parts=[];
+  const gl=100-los; S.camG=Math.max(-14, gl-36);
+  const fg=g=>Math.max(-9.5,g);
+  S.rb={g:gl+5,x:0,frame:'rbs',pal:'neb2',rot:0,z:0};
+  S.ol=[-11,-7,-3.5,3.5,7,11].map((x,i)=>({g:fg(gl+0.9),bg:fg(gl+0.9),x,frame:'fs',pal:'neb'+[0,3,1,4,2,0][i],rot:0,z:0}));
+  const D=[];
+  [-11,-7,7,11].forEach((x,i)=>D.push({g:gl-1,x,line:true,pal:'away'+[1,3,0,2][i]}));
+  [-14,-4.5,9].forEach((x,i)=>D.push({g:gl-5,x,pal:'away'+[4,2,3][i]}));
+  [-21,21].forEach((x,i)=>D.push({g:gl-8,x,pal:'away'+[0,1][i]}));
+  [-10,12].forEach((x,i)=>D.push({g:gl-11,x,pal:'away'+[2,4][i]}));
+  S.def=D.map(d=>({...d,g:fg(d.g),bg:fg(d.g),frame:'bs',rot:0,z:0}));
+}
+
+function runPlay(toBall, td, done){
+  const rb=S.rb; S.phase='run'; S.t=0; S.done=done; S.td=td; S.fired=false;
+  S.g0=rb.g; S.x0=rb.x; S.g1= td ? -5 : 100-toBall; S.x1=clamp((R()*2-1)*12,-18,18);
+  const dist=Math.abs(S.g1-S.g0);
+  S.dur=clamp(.45+dist*.08,.75,3.2); S.jukes=1+Math.min(3,Math.floor(dist/8)); S.jukeAmp=Math.min(9,2+dist*.35);
+  S.tackler=null;
+  if (!td){ let bd=1e9; for(const d of S.def){ const dd=Math.abs(d.g-S.g1)*3+Math.abs(d.x-S.x1); if(dd<bd){bd=dd;S.tackler=d;} } S.tackler.sg=S.tackler.g; S.tackler.sx=S.tackler.x; }
+}
+function confetti(n){
+  for(let i=0;i<n;i++) S.parts.push({x:R()*W,y:-4-R()*40,vx:(R()-.5)*30,vy:20+R()*40,c:['#d00000','#ffffff','#fdf2d9','#f2c230'][Math.floor(R()*4)],life:3+R()*2});
+}
+
+function update(dt){
+  S.clock+=dt;
+  for(const c of S.clouds){ c.x+=dt*3*(c.w/50); if(c.x>W+10) c.x=-c.w-10; }
+  const rb=S.rb; if(!rb) return;
+  const step=Math.floor(S.clock*12)%2?'a':'b';
+  if (S.phase==='idle'){
+    rb.frame='rbs';
+  } else if (S.phase==='run'){
+    S.t+=dt/S.dur; const t=Math.min(1,S.t), e=.5*t+.5*t*(2-t);
+    rb.g=lerp(S.g0,S.g1,e); rb.x=lerp(S.x0,S.x1,e)+Math.sin(t*Math.PI*S.jukes)*S.jukeAmp*(1-t);
+    rb.frame='rb'+step;
+    for(const d of S.def){
+      if (d===S.tackler){ const k=Math.pow(t,1.3); d.g=lerp(d.sg,S.g1-1,k); d.x=lerp(d.sx,S.x1,k); d.frame='b'+step; }
+      else if (d.line && t<.55){ d.g=d.bg+t*.6+Math.sin(S.clock*22+d.x)*.12; d.frame='bs'; }
+      else { const dg=rb.g-d.g, dx=rb.x-d.x; d.g+=clamp(dg,-1,1)*5.5*dt; d.x+=clamp(dx,-1,1)*4.5*dt; d.frame=(d.g>rb.g?'f':'b')+step; }
+    }
+    for(const o of S.ol){ o.g=o.bg-t*.7+Math.sin(S.clock*20+o.x)*.1; }
+    if (S.t>=1){
+      S.t=0;
+      if (S.td){ S.phase='td'; S.cheer=5; sfx.td(); banner('TOUCHDOWN!','td',true); confetti(90); }
+      else { S.phase='tackle'; sfx.whistle(); }
+    }
+  } else if (S.phase==='tackle'){
+    S.t+=dt/.32; const t=Math.min(1,S.t), tk=S.tackler;
+    rb.rot=t*Math.PI/2*(S.x1>0?1:-1); tk.rot=-rb.rot*0.9; tk.g=lerp(tk.g,rb.g-.6,.3); tk.x=lerp(tk.x,rb.x,.3); tk.frame='bs';
+    for(const d of S.def) if(d!==tk && !d.line){ const dg=rb.g-d.g; d.g+=clamp(dg,-1,1)*3*dt; d.frame='fs'; }
+    if (S.t>=1 && !S.fired){ S.fired=true; setTimeout(()=>S.done&&S.done(),650); }
+  } else if (S.phase==='td'){
+    S.t+=dt; rb.frame='rbs'; rb.z=Math.abs(Math.sin(S.clock*7))*1.2;
+    if (Math.random()<dt*20) confetti(2);
+    for(const d of S.def) d.frame='fs';
+    if (S.t>1.9 && !S.fired){ S.fired=true; S.done&&S.done(); }
+  }
+  if (S.cheer>0) S.cheer-=dt;
+  for(const p of S.parts){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=.99; p.life-=dt; }
+  S.parts=S.parts.filter(p=>p.life>0&&p.y<H+4);
+  if (S.fade>0) S.fade=Math.max(0,S.fade-dt*2.4);
+}
+
+// ground quad between depths g0 (near) and g1 (far) and laterals xa..xb
+function quad(g0,g1,xa,xb,color){
+  const z0=Math.max(0.7,g0-S.camG), z1=g1-S.camG; if (z1<=0.7) return;
+  const y0=HY+PA/z0, y1=HY+PA/z1;
+  ctx.fillStyle=color; ctx.beginPath();
+  ctx.moveTo(W/2+xa*PCX/z0,y0); ctx.lineTo(W/2+xb*PCX/z0,y0); ctx.lineTo(W/2+xb*PCX/z1,y1); ctx.lineTo(W/2+xa*PCX/z1,y1); ctx.closePath(); ctx.fill();
+}
+// text painted flat on the turf
+function groundText(str,color,gNear,gFar,xCenter,widthYds){
+  const z0=gNear-S.camG, z1=gFar-S.camG; if (z0<7) return;
+  const y0=HY+PA/z0, y1=HY+PA/z1, zm=(z0+z1)/2, w=widthYds*PCX/zm;
+  if (y0-y1<1) return;
+  ctx.drawImage(flatText(str,color), W/2+xCenter*PCX/zm-w/2, y1, w, y0-y1);
+}
+function boardText(){
+  if (S.phase==='td') return Math.floor(S.clock*3)%2 ? 'TOUCHDOWN' : 'HUSKERS';
+  if (S.phase==='run'||S.phase==='tackle') return 'HUSKERS';
+  return Math.floor(S.clock/3)%2 ? 'GO BIG RED' : 'NEBRASKA';
+}
+
+function render(){
+  // sky
+  ['#4f9fe0','#63b0ea','#79c0f0','#90cff5','#a9dcf8'].forEach((c,i)=>{ ctx.fillStyle=c; ctx.fillRect(0,i*12,W,12); });
+  for(const c of S.clouds){ const x=Math.round(c.x), y=c.y, w=c.w;
+    ctx.fillStyle='#ffffff'; ctx.fillRect(x,y+4,w,5); ctx.fillRect(x+w*.2,y,w*.45,5); ctx.fillRect(x+w*.5,y+2,w*.35,4);
+    ctx.fillStyle='#dbe9f5'; ctx.fillRect(x+2,y+8,w-4,2); }
+  // stadium, anchored just behind the far end line
+  const yGround=Math.round(yAt(114)), top=yGround-ST_H;
+  ctx.drawImage(STADIUM[S.cheer>0 ? Math.floor(S.clock*8)%2 : 0], 0, top);
+  // HuskerVision board screen
+  const bx=BOARD.x, by=top+BOARD.y;
+  ctx.fillStyle='#0a0d18'; ctx.fillRect(bx,by,BOARD.w,BOARD.h);
+  const msg=boardText(), sc=2;
+  pxText(msg, Math.round(bx+(BOARD.w-textW(msg,sc))/2), by+(BOARD.h-10)/2, sc, S.phase==='td'?'#ffdf4a':'#ff3030');
+  ctx.fillStyle='rgba(255,255,255,.06)'; for(let y=by;y<by+BOARD.h;y+=2) ctx.fillRect(bx,y,BOARD.w,1);
+  // ground / sidelines
+  ctx.fillStyle='#24502a'; ctx.fillRect(0,yGround,W,H-yGround);
+  // field stripes + end zones
+  for(let g=-10; g<110; g+=5){
+    let c; if (g<0||g>=100) c='#b30000'; else c=((g/5)%2)?'#3d8a36':'#46993e';
+    quad(g,g+5,-HALF,HALF,c);
+  }
+  // sidelines & end lines
+  quad(-10,110,-HALF-.6,-HALF,'#ffffff'); quad(-10,110,HALF,HALF+.6,'#ffffff');
+  for (const g of [-10,110]) quad(g-.3,g+.3,-HALF,HALF,'#ffffff');
+  // yard lines, hashes, numbers
+  for(let g=0; g<=100; g++){
+    const z=g-S.camG; if (z<0.9) continue;
+    if (g%5===0){ const w=(g===0||g===100)?.35:.18; quad(g-w,g+w,-HALF,HALF,'#ffffff'); }
+    else if (z<60){ for(const hx of [-HALF+.3,-6.67,6.67,HALF-1.3]) quad(g-.12,g+.12,hx,hx+1,'rgba(255,255,255,.85)'); }
+    if (g%10===0 && g>0 && g<100){
+      const n=String(g<=50?g:100-g);
+      for (const side of [-1,1]) groundText(n,'#ffffff',g-1.6,g+1.6,side*(HALF-10),3.4);
+    }
+  }
+  // midfield N and end zone lettering
+  if (46-S.camG>18) groundText('N','#d00000',46,54,0,6);
+  groundText('NEBRASKA','#ffffff',-8,-2,0,30);
+  groundText('HUSKERS','#ffffff',102,108,0,26);
+  // line of scrimmage
+  if (S.phase==='idle' && S.los>0 && S.los<100){ const g=100-S.los; quad(g-.2,g+.2,-HALF,HALF,'rgba(80,170,255,.9)'); }
+  // far goal post
+  const gp=proj(110,0);
+  if (gp){ const s=gp.s; ctx.fillStyle='#f2c230'; ctx.fillRect(gp.x-s*.6,gp.y-s*14,s*1.2,s*14); ctx.fillRect(gp.x-s*12,gp.y-s*15,s*24,s*1.2);
+    ctx.fillRect(gp.x-s*12,gp.y-s*40,s*1,s*26); ctx.fillRect(gp.x+s*11,gp.y-s*40,s*1,s*26); }
+  // players, far to near
+  const all=[S.rb,...S.ol,...S.def].filter(Boolean).sort((a,b)=>b.g-a.g);
+  for(const p of all){
+    const pr=proj(p.g,p.x); if(!pr) continue;
+    const s=clamp(pr.s,0.35,6.5);
+    if (pr.x<-20*s||pr.x>W+20*s) continue;
+    ctx.fillStyle='rgba(0,0,0,.28)'; ctx.fillRect(pr.x-5*s,pr.y-s,10*s,2*s);
+    ctx.save(); ctx.translate(pr.x,pr.y-(p.z||0)*8*s); if(p.rot) ctx.rotate(p.rot); ctx.scale(s,s);
+    ctx.drawImage(spr(p.frame,p.pal),-7,-17); ctx.restore();
+  }
+  for(const p of S.parts){ ctx.fillStyle=p.c; ctx.fillRect(Math.round(p.x),Math.round(p.y),2,2); }
+  if (S.fade>0){ ctx.fillStyle=`rgba(0,0,0,${S.fade})`; ctx.fillRect(0,0,W,H); }
+}
+
+let last=performance.now();
+function loop(now){ const dt=Math.min(.05,(now-last)/1000); last=now; update(dt); render(); requestAnimationFrame(loop); }
+
+/* =========================================================
+   UI
+   ========================================================= */
+const $=id=>document.getElementById(id);
+const screens=['home','play','result','end','archive'];
+function show(name){ screens.forEach(s=>$('scr-'+s).hidden = s!==name); postHeight(); }
+function spot(b){ b=Math.round(b); if (b>=100) return 'END ZONE'; if (b===50) return 'MIDFIELD'; return b<50 ? 'NEB '+b : 'OPP '+(100-b); }
+let bannerTimer=0;
+function banner(text,cls,hold){
+  const b=$('banner'); clearTimeout(bannerTimer); b.className=''; void b.offsetWidth;
+  b.textContent=text; b.className=(hold?'hold ':'show ')+cls;
+  if(!hold) bannerTimer=setTimeout(()=>{b.className='';},1800);
+}
+function clearBanner(){ clearTimeout(bannerTimer); $('banner').className=''; }
+
+let G=null, timerId=0;
+
+function updateBoard(){
+  if(!G) return;
+  $('bPlay').textContent=Math.min(G.play+1,PLAYS)+'/'+PLAYS;
+  $('bBall').textContent=spot(G.ballOn);
+  $('bGo').textContent=Math.max(0,100-G.ballOn);
+  const t=Math.ceil(G.timeLeft); $('bClock').textContent=':'+String(Math.max(0,t)).padStart(2,'0');
+  $('bClock').classList.toggle('warn', G.timeLeft<=5 && !G.busy);
+}
+
+function startGame(mode,no){
+  const qs = mode==='unlimited' ? shuffled(QS.length,Math.random).slice(0,PLAYS) : dailySet(no);
+  G={mode,no,qs,play:0,ballOn:START,results:[],timeLeft:SECONDS,busy:false};
+  $('title').classList.add('gone'); $('board').hidden=false; clearBanner();
+  S.fade=1; setupFormation(START);
+  nextPlay();
+}
+
+function hintLine(q){
+  if (q.type==='rec') return 'Answer with a record, like 7-6';
+  if (q.type==='num') return 'Answer with a number';
+  return q.items.length>1 ? `${q.items.length} right answers. Any one counts` : 'One right answer';
+}
+
+function nextPlay(){
+  if (G.play>=PLAYS || G.ballOn>=100) return finish();
+  if (S.los!==G.ballOn || S.phase!=='idle'){ S.fade=1; setupFormation(G.ballOn); }
+  clearBanner();
+  const q=QS[G.qs[G.play]];
+  $('pNum').textContent=`PLAY ${G.play+1} OF ${PLAYS}`;
+  $('prompt').textContent=q.q;
+  $('pCount').textContent=hintLine(q);
+  $('ans').value=''; $('fb').textContent='';
+  G.timeLeft=SECONDS; G.busy=false; G.lastTick=SECONDS;
+  show('play'); updateBoard(); renderTimer();
+  try{ $('ans').focus({preventScroll:true}); }catch(e){}
+  sfx.hike();
+  clearInterval(timerId);
+  let prev=performance.now();
+  timerId=setInterval(()=>{
+    const now=performance.now(); G.timeLeft-=(now-prev)/1000; prev=now;
+    if (G.timeLeft<=5 && Math.ceil(G.timeLeft)<G.lastTick){ G.lastTick=Math.ceil(G.timeLeft); if(G.timeLeft>0) sfx.tick(); }
+    renderTimer(); updateBoard();
+    if (G.timeLeft<=0) resolve(null);
+  },100);
+}
+function renderTimer(){
+  const p=clamp(G.timeLeft/SECONDS,0,1); $('tbar').style.width=(p*100)+'%'; $('tbar').classList.toggle('warn',G.timeLeft<=5);
+  $('pWorth').textContent = G.timeLeft>0 ? `WORTH +${yardsFor(G.timeLeft)} YDS` : 'SACKED';
+}
+
+function submit(e){
+  e&&e.preventDefault();
+  if (!G||G.busy) return;
+  const val=$('ans').value.trim(); if(!val) return;
+  const q=QS[G.qs[G.play]]; const res=check(q,val);
+  if (!res.ok){
+    const inp=$('ans'); inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake'); inp.select(); sfx.bad();
+    if (res.free){ $('fb').textContent=res.hint; return; }
+    G.timeLeft-=PENALTY; renderTimer(); updateBoard();
+    $('fb').textContent=`"${val.toUpperCase()}": ${res.hint} −${PENALTY} SEC`;
+    if (G.timeLeft<=0) resolve(null);
+    return;
+  }
+  resolve(res);
+}
+
+function resolve(res){
+  if (G.busy) return; G.busy=true; clearInterval(timerId); G.timeLeft=Math.max(0,G.timeLeft); updateBoard();
+  const q=QS[G.qs[G.play]];
+  const yds = res ? yardsFor(G.timeLeft) : SACK, tier=tierFor(yds);
+  const newBall=clamp(G.ballOn+yds,1,100), gain=newBall-G.ballOn, td=newBall>=100;
+  const secs = SECONDS - G.timeLeft;
+  G.results.push({q:q.q,a:res?res.label:null,tier,gain,secs:res?Math.round(secs*10)/10:null});
+  if (res) sfx.good(tier); else sfx.bad();
+
+  const chip=$('rTier'); chip.textContent=TIERS[tier].name; chip.className='chip c'+tier;
+  $('rGain').textContent = td ? 'TOUCHDOWN!' : (gain>=0?'+':'')+gain+' YDS';
+  $('rGain').className='res-gain c'+tier;
+  const answer = q.type==='any' ? (res ? res.label : q.items.map(i=>i.label).join(', ')) : q.label;
+  $('rLine').textContent = res ? `${answer} · answered in ${secs.toFixed(1)}s` : `Time's up. Sacked. Answer: ${answer}`;
+  $('rNote').textContent = q.note;
+  const others = (q.type==='any' && res) ? q.items.filter(i=>i!==res.item) : [];
+  $('rMore').innerHTML = others.length ? 'Also correct: ' + others.map(x=>`<span class="chip c2">${x.label}</span>`).join('') : '';
+  const nb=$('btnNext'); nb.disabled=true;
+  nb.textContent = (td || G.play+1>=PLAYS) ? 'FINAL WHISTLE ▶' : 'NEXT PLAY ▶';
+  show('result');
+
+  runPlay(newBall, td, ()=>{
+    G.ballOn=newBall; G.play++; G.timeLeft=SECONDS; updateBoard();
+    if (!td) banner(res ? (gain>=0?'+':'')+gain+' YDS' : 'SACKED!', 't'+tier);
+    nb.disabled=false; try{ nb.focus({preventScroll:true}); }catch(e){}
+  });
+}
+
+function finish(){
+  clearInterval(timerId);
+  const td=G.ballOn>=100, plays=G.play, yards=G.ballOn-START;
+  const rec={no:G.no,mode:G.mode,td,plays,ballOn:G.ballOn,yards,results:G.results};
+  if (G.mode!=='unlimited'){
+    const s=load(); s.played=s.played||{};
+    if (!s.played[G.no]){
+      s.played[G.no]=rec;
+      if (G.mode==='daily'){ s.streak = (s.last===G.no-1) ? (s.streak||0)+1 : (s.last===G.no ? (s.streak||1) : 1); s.last=G.no; }
+      save(s);
+    }
+  }
+  showEnd(rec);
+}
+
+function headline(r){
+  if (r.td) return r.plays<=4 ? 'HEISMAN DRIVE!' : r.plays<=6 ? 'TOUCHDOWN!' : 'TOUCHDOWN — JUST IN TIME!';
+  if (r.ballOn>=80) return 'STOPPED IN THE RED ZONE';
+  if (r.ballOn>=60) return 'FIELD GOAL RANGE';
+  return 'BRING ON THE PUNT TEAM';
+}
+function shareString(r){
+  const label = r.mode==='unlimited' ? 'UNLIMITED' : '#'+r.no;
+  const line = r.td ? `🏈 TOUCHDOWN in ${r.plays} play${r.plays>1?'s':''}` : `Drive stalled at ${spot(r.ballOn)} (${r.yards} yds)`;
+  return `NEBRILLION ${label} · 2023–25\n${line}\n${r.results.map(x=>TIERS[x.tier].emoji).join('')}${SHARE_URL?'\n'+SHARE_URL:''}`;
+}
+let lastRec=null;
+function showEnd(r){
+  lastRec=r;
+  $('title').classList.add('gone'); $('board').hidden=false;
+  if (!G){ G={ballOn:r.ballOn,play:r.plays,timeLeft:0,busy:true}; S.fade=1; setupFormation(Math.min(r.ballOn,99)); }
+  G.busy=true; updateBoard(); $('bClock').textContent=':00'; $('bPlay').textContent=r.plays+'/'+PLAYS;
+  $('eHead').textContent=headline(r);
+  $('eHead').style.color = r.td ? 'var(--t4)' : 'var(--cream)';
+  $('eSub').textContent = r.td ? `Scored in ${r.plays} play${r.plays>1?'s':''} · 75 yards` : `Drive stalled at ${spot(r.ballOn)} · ${r.yards} yards gained`;
+  $('eList').innerHTML = r.results.map((x,i)=>`<li><span><span class="q">${i+1}. ${x.q}</span><br><span class="a">${x.a?x.a+' · '+x.secs+'s':'Sacked'}</span></span><span class="chip c${x.tier}">${x.gain>=0?'+':''}${x.gain}</span></li>`).join('');
+  $('shareText').hidden=true; $('eNote').textContent='';
+  $('eMeta').textContent = r.mode==='unlimited' ? 'UNLIMITED DRIVE' : `DRIVE #${r.no} · STREAK ${streakNow()}`;
+  if (!r.td) clearBanner();
+  show('end');
+}
+
+async function share(){
+  const txt=shareString(lastRec); let ok=false;
+  try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){
+    try{ const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); ok=document.execCommand('copy'); ta.remove(); }catch(e2){}
+  }
+  if (ok) $('eNote').textContent='COPIED. PASTE IT ANYWHERE.';
+  else { $('shareText').textContent=txt; $('shareText').hidden=false; $('eNote').textContent='COPY THE TEXT ABOVE TO SHARE.'; }
+  postHeight();
+}
+
+function goHome(){
+  clearInterval(timerId); G=null; clearBanner();
+  $('title').classList.remove('gone'); $('board').hidden=true;
+  S.fade=1; setupFormation(START);
+  const s=load(), done=s.played&&s.played[TODAY];
+  $('btnStart').textContent = done ? '▶ VIEW TODAY\'S DRIVE ◀' : '▶ BEGIN DRIVE ◀';
+  $('meta').textContent=`DRIVE #${TODAY} · STREAK ${streakNow()}`;
+  if (!s.seen){ $('how').open=true; s.seen=1; save(s); }
+  show('home');
+}
+function showArchive(){
+  clearInterval(timerId); G=null; clearBanner();
+  const s=load(), played=s.played||{};
+  const list=$('archList'); list.innerHTML='';
+  if (TODAY<=1){ list.innerHTML='<p class="meta">No past drives yet. Check back tomorrow.</p>'; }
+  for (let n=TODAY-1; n>=1; n--){
+    const b=document.createElement('button'); const p=played[n];
+    b.innerHTML = p ? `#${n} ${p.td?'🏈':'✓'}` : `#${n}`; if(p) b.className='done';
+    b.onclick=()=> p ? (G=null, showEnd(p)) : startGame('archive',n);
+    list.appendChild(b);
+  }
+  show('archive');
+}
+
+$('asOf').textContent = `"Last season" means 2025. Results, rankings at game time and season stats come from ESPN.`;
+$('form').addEventListener('submit',submit);
+$('btnNext').addEventListener('click',()=>{ if(G) nextPlay(); });
+$('btnShare').addEventListener('click',share);
+$('btnStart').addEventListener('click',()=>{
+  const s=load(); const p=s.played&&s.played[TODAY];
+  if (p){ G=null; showEnd(p); } else startGame('daily',TODAY);
+});
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{
+  const g=b.dataset.go; if(g==='home') goHome(); else if(g==='archive') showArchive(); else startGame('unlimited',0);
+}));
+function syncMute(){ $('mute').textContent = muted ? '♪ OFF' : '♪ ON'; }
+$('mute').addEventListener('click',()=>{ muted=!muted; const s=load(); s.muted=muted; save(s); syncMute(); if(!muted) tone(660,.08); });
+document.addEventListener('keydown',e=>{
+  if (e.key==='Enter' && !$('scr-result').hidden && !$('btnNext').disabled && document.activeElement!==$('btnNext')){ e.preventDefault(); $('btnNext').click(); }
+});
+
+/* Let a parent page auto-size the iframe (optional) */
+function postHeight(){ try{ if (window.parent!==window) window.parent.postMessage({type:'nebrillion-height',height:document.documentElement.scrollHeight},'*'); }catch(e){} }
+if ('ResizeObserver' in window) new ResizeObserver(postHeight).observe(document.body);
+
+syncMute(); goHome(); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
