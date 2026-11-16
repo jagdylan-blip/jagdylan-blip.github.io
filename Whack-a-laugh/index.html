@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Silence &amp; Respect</title>
+<meta name="description" content="You are the Sentinel at the Tomb of the Unknown Soldier. Keep the crowd silent and respectful for one 60-second watch.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#1c2541; --navy2:#121a30; --gold:#c9a227; --paper:#f6f3ec; --ink:#16181e; --muted:#6b6f7a;
+  --red:#b3261e; --line:#d9d3c6; --ok:#2f7d4a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:'Oswald',system-ui,sans-serif}
+button{font:inherit;cursor:pointer}
+#app{max-width:800px;margin:0 auto;background:var(--paper)}
+
+/* ---------- stage ---------- */
+#stage{position:relative;aspect-ratio:10/7;overflow:hidden;background:#cfd8e3;container-type:inline-size;
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+#hud{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:3cqw;padding:1.3cqw 2cqw 3cqw;
+  background:linear-gradient(rgba(18,26,48,.85),rgba(18,26,48,0));color:#fff;font-size:clamp(11px,2.3cqw,18px);
+  letter-spacing:.12em;pointer-events:none;transition:opacity .3s}
+#hud.off{opacity:0}
+#hud span{white-space:nowrap}
+#hud b{font-weight:700;color:#ffd34d}
+#mult{color:#ffd34d;min-width:3ch}
+#meterWrap{flex:1;display:flex;align-items:center;gap:1.2cqw;justify-content:flex-end}
+#meter{width:min(26cqw,200px);height:1.6cqw;min-height:7px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.55);border-radius:99px;overflow:hidden}
+#meter i{display:block;height:100%;width:100%;background:#7fd18b;transition:width .15s linear,background .3s}
+#mute{position:absolute;right:1.4cqw;bottom:1.4cqw;z-index:3;font-size:clamp(10px,1.8cqw,14px);letter-spacing:.15em;
+  background:rgba(18,26,48,.75);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:4px;padding:.8cqw 1.4cqw}
+
+.ov{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:4cqw;background:rgba(14,19,34,.78);color:#fff;transition:opacity .35s}
+.ov[hidden]{display:none}
+.ov .kicker{font-size:2.2cqw;letter-spacing:.45em;color:var(--gold);margin:0 0 1.4cqw;text-transform:uppercase}
+.ov h1,.ov h2{font-weight:700;margin:0;line-height:1;letter-spacing:.04em;text-transform:uppercase}
+.ov h1{font-size:9cqw;text-shadow:0 .5cqw 0 rgba(0,0,0,.35)}
+.ov h2{font-size:6.4cqw}
+.ov .rule{width:16cqw;height:.45cqw;background:var(--gold);margin:2.2cqw auto}
+.ov p{font-family:'Libre Baskerville',Georgia,serif;font-size:clamp(12px,2.35cqw,18px);line-height:1.45;max-width:62cqw;margin:0 0 3cqw;color:#e8e6df}
+.ov .score{font-size:11cqw;font-weight:700;color:#ffd34d;line-height:1;margin:1cqw 0 .6cqw}
+.ov .rank{font-size:3cqw;letter-spacing:.3em;text-transform:uppercase;margin:0 0 1.2cqw}
+.go{font-weight:600;font-size:clamp(14px,3cqw,22px);letter-spacing:.3em;text-transform:uppercase;color:#fff;background:var(--navy);
+  border:2px solid var(--gold);padding:1.8cqw 4.5cqw;border-radius:3px;box-shadow:0 .6cqw 0 rgba(0,0,0,.35)}
+.go:hover,.go:focus-visible{background:var(--gold);color:var(--navy);outline:none}
+
+/* ---------- panel ---------- */
+#panel{padding:22px 20px 26px;border-top:6px solid var(--navy)}
+.scr[hidden]{display:none}
+h3{font-weight:600;letter-spacing:.25em;text-transform:uppercase;font-size:15px;color:var(--navy);margin:0 0 12px}
+.prose{font-family:'Libre Baskerville',Georgia,serif;font-size:15px;line-height:1.65;color:#2a2c33}
+.prose p{margin:0 0 12px}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 18px}
+@media (max-width:520px){.legend{grid-template-columns:1fr}}
+.legend div{border:1px solid var(--line);border-radius:6px;padding:10px 12px;background:#fff}
+.legend strong{display:block;letter-spacing:.2em;text-transform:uppercase;font-size:13px;margin-bottom:4px}
+.legend .tap strong{color:var(--red)}
+.legend .leave strong{color:var(--ok)}
+.legend span{font-family:'Libre Baskerville',Georgia,serif;font-size:13.5px;color:#444;line-height:1.5}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 18px}
+@media (max-width:520px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stats div{background:#fff;border:1px solid var(--line);border-radius:6px;padding:10px 6px;text-align:center}
+.stats small{display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.stats b{display:block;font-size:24px;color:var(--navy);margin-top:2px}
+.facts{list-style:none;margin:0 0 18px;padding:0}
+.facts li{font-family:'Libre Baskerville',Georgia,serif;font-size:14.5px;line-height:1.6;padding:10px 0 10px 18px;border-top:1px solid var(--line);position:relative}
+.facts li::before{content:'';position:absolute;left:0;top:19px;width:7px;height:7px;background:var(--gold);transform:rotate(45deg)}
+details{border-top:1px solid var(--line);padding-top:14px;margin-top:6px}
+summary{cursor:pointer;letter-spacing:.25em;text-transform:uppercase;font-size:14px;color:var(--navy);font-weight:600}
+details .prose{margin-top:12px}
+.src{font-family:'Libre Baskerville',Georgia,serif;font-size:12.5px;color:var(--muted);margin:14px 0 0}
+.src a{color:var(--navy)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="cv" aria-label="Game scene: the Tomb of the Unknown Soldier with a Sentinel walking the mat and visitors on the plaza steps"></canvas>
+
+    <div id="hud" class="off" aria-hidden="true">
+      <span>TIME <b id="hTime">60</b></span>
+      <span>SCORE <b id="hScore">0</b></span>
+      <span id="mult"></span>
+      <div id="meterWrap"><span>SILENCE</span><div id="meter"><i id="meterBar"></i></div></div>
+    </div>
+
+    <div class="ov" id="ovStart">
+      <div class="kicker">Arlington National Cemetery</div>
+      <h1>Silence &amp;<br>Respect</h1>
+      <div class="rule"></div>
+      <p>You are the Sentinel at the Tomb of the Unknown Soldier. Keep the crowd quiet for one 60-second watch.</p>
+      <button class="go" id="btnStart">Begin the watch</button>
+    </div>
+
+    <div class="ov" id="ovEnd" hidden>
+      <div class="kicker" id="eKicker">Your watch is relieved</div>
+      <h2 id="eHead">The guard is changed</h2>
+      <div class="score" id="eScore">0</div>
+      <div class="rank" id="eRank">Sentinel</div>
+      <p id="eLine"></p>
+      <button class="go" id="btnAgain">Stand another watch</button>
+    </div>
+
+    <button id="mute" aria-pressed="false">SOUND ON</button>
+  </div>
+
+  <div id="panel">
+    <section class="scr" id="pIntro">
+      <h3>How to stand your watch</h3>
+      <div class="legend">
+        <div class="tap"><strong>Tap or swipe</strong><span>Visitors who laugh, chat, take loud phone calls — or step over the chain toward the mat.</span></div>
+        <div class="leave"><strong>Leave alone</strong><span>Quiet visitors and quiet photographers. Scolding them costs you points and composure.</span></div>
+      </div>
+      <div class="prose">
+        <p>Every disruption you miss drains the <b>Silence</b> meter. Let it empty and the ceremony is broken. Hush five in a row for double points, ten for triple.</p>
+      </div>
+    </section>
+
+    <section class="scr" id="pResult" hidden>
+      <h3>Watch report</h3>
+      <div class="stats">
+        <div><small>Hushed</small><b id="sHushed">0</b></div>
+        <div><small>Missed</small><b id="sMissed">0</b></div>
+        <div><small>Wrongly scolded</small><b id="sWrong">0</b></div>
+        <div><small>Best streak</small><b id="sStreak">0</b></div>
+      </div>
+      <h3>At the Tomb</h3>
+      <ul class="facts" id="facts"></ul>
+    </section>
+
+    <details>
+      <summary>About the Tomb</summary>
+      <div class="prose">
+        <p>The Tomb of the Unknown Soldier sits on a hill at Arlington National Cemetery, overlooking Washington, D.C. Its west face reads: <i>“Here rests in honored glory an American soldier known but to God.”</i></p>
+        <p>Soldiers of the 3rd U.S. Infantry Regiment — “The Old Guard” — have guarded it every minute of every day since 1937, in every kind of weather. Signs on the plaza ask visitors for silence and respect, and when a crowd forgets, the Sentinel will stop the walk and remind them.</p>
+        <p>This game is a lighthearted look at that duty. The real place is a solemn one: if you visit, stay quiet and stay behind the chains.</p>
+      </div>
+      <p class="src">Sources: <a href="https://www.arlingtoncemetery.mil/Explore/Tomb-of-the-Unknown-Soldier" target="_blank" rel="noopener">Arlington National Cemetery</a>; <a href="https://oldguard.mdw.army.mil/" target="_blank" rel="noopener">3rd U.S. Infantry Regiment (The Old Guard)</a>.</p>
+    </details>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const W = 800, H = 560, DUR = 60;
+const $ = s => document.querySelector(s);
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp01 = t => Math.max(0, Math.min(1, t));
+const lerp = (a, b, t) => a + (b - a) * clamp01(t);
+
+const cv = $('#cv'), ctx = cv.getContext('2d');
+function fit() {
+  const r = cv.getBoundingClientRect(), d = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.max(1, Math.round(r.width * d));
+  cv.height = Math.max(1, Math.round(r.height * d));
+}
+if ('ResizeObserver' in window) new ResizeObserver(fit).observe(cv); else addEventListener('resize', fit);
+fit();
+
+function rr(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+/* ---------- content ---------- */
+const LINES = {
+  laugh: ['HA HA HA!', 'HAHAHA!', '*snort* HA!', 'LOL!'],
+  talk: ['…so THEN he said—', 'Where are we eating?', 'Is this the one?', 'Ugh, so hot.', 'My feet hurt!', 'Wait, who is it?'],
+  phone: ['♪ RING RING ♪', 'HELLO?! CAN YOU HEAR ME?', '♪ ♫ ♪'],
+  cross: ['Just one quick pic!', 'Can I get closer?', 'Hold on — selfie!']
+};
+const SORRY = ['sorry…', 'oops', '…', '(mortified)'];
+const FACTS = [
+  'The Tomb has been guarded 24 hours a day, every day of the year, since July 2, 1937.',
+  'Sentinels come from the 3rd U.S. Infantry Regiment, known as “The Old Guard,” the Army’s oldest active-duty infantry unit.',
+  'A Sentinel takes 21 steps across the mat, faces the Tomb for 21 seconds, turns, and waits 21 seconds more — a nod to the 21-gun salute.',
+  'The Sentinel carries the rifle on the shoulder away from the Tomb, keeping themselves between the Tomb and any threat.',
+  'The Unknown Soldier from World War I was laid to rest on Nov. 11, 1921 — the third anniversary of the Armistice.',
+  'Unknowns from World War II and the Korean War were interred beside the Tomb on May 30, 1958.',
+  'The Vietnam Unknown, interred in 1984, was identified by DNA in 1998 as Air Force 1st Lt. Michael Blassie. That crypt now remains empty.',
+  'The Tomb Guard Identification Badge is one of the least-awarded badges in the U.S. Army.',
+  'From April through September the guard changes every half hour during cemetery hours; the rest of the year, every hour.',
+  'The Tomb’s west face reads: “Here rests in honored glory an American soldier known but to God.”'
+];
+const RANKS = [
+  [0, 'Visitor', 'You meant well, but the plaza deserved a quieter watch.'],
+  [2500, 'Trainee', 'A solid start. The real Sentinels train for months before they walk the mat.'],
+  [5500, 'Sentinel', 'The crowd stayed quiet and the walk stayed steady. Well stood.'],
+  [9000, 'Honored Sentinel', 'Silence and respect, held start to finish. The Old Guard would approve.']
+];
+
+/* ---------- layout ---------- */
+const ROWS = [
+  { y: 160, s: .74, xs: [70, 200, 330, 460, 590, 720] },
+  { y: 236, s: .87, xs: [135, 265, 395, 525, 655] },
+  { y: 316, s: 1.0, xs: [70, 200, 330, 460, 590, 720] }
+];
+const SLOTS = [];
+ROWS.forEach((r, ri) => r.xs.forEach(x => SLOTS.push({ ri, x, v: null })));
+const SEN_Y = 431, MAT_L = 140, MAT_R = 660;
+const CROSS_START = 356, CROSS_END = 418;
+
+const SKINS = ['#f1d3b8', '#e0b48f', '#c68d63', '#9a6542', '#6b4429', '#f5dcc6', '#b47a52'];
+const SHIRTS = ['#c0392b', '#2e86c1', '#27ae60', '#e67e22', '#8e44ad', '#16a085', '#d35400', '#34495e', '#e84393', '#7f8c8d', '#f1c40f', '#1abc9c', '#fdfdfd'];
+const HAIRC = ['#1b1b1b', '#3b2416', '#6b4423', '#a0703a', '#d8b56a', '#8a8a8a', '#cfcfcf', '#2a1a10'];
+const HAIRS = ['short', 'short', 'long', 'bun', 'bald', 'cap', 'curly'];
+function mkLook() {
+  return { skin: pick(SKINS), shirt: pick(SHIRTS), hair: pick(HAIRS), hc: pick(HAIRC), cap: pick(SHIRTS) };
+}
+
+/* ---------- state ---------- */
+let G = null, playing = false, clock = 0;
+let crossers = [], floats = [], yellMsg = null, lastYell = -99, idleSpawn = .5;
+const Sen = { x: MAT_L, dir: 1, mode: 'walk', t: 0, phase: 0, halt: 0 };
+
+/* ---------- audio ---------- */
+let AC = null, muted = false;
+try { muted = localStorage.getItem('sr-muted') === '1'; } catch (e) {}
+function ac() {
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+  if (AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function noise(t0, dur, freq, gain) {
+  const a = ac(); if (!a || muted) return;
+  const n = Math.floor(a.sampleRate * dur), b = a.createBuffer(1, n, a.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+  const s = a.createBufferSource(); s.buffer = b;
+  const f = a.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 1.1;
+  const g = a.createGain(); g.gain.value = gain;
+  s.connect(f); f.connect(g); g.connect(a.destination); s.start(a.currentTime + t0);
+}
+function tone(t0, dur, freq, type, gain) {
+  const a = ac(); if (!a || muted) return;
+  const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + t0;
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + .015); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + .05);
+}
+const sfx = {
+  heel() { noise(0, .05, 2300, 1.1); noise(.1, .05, 1900, .9); },
+  wrong() { tone(0, .18, 150, 'square', .07); tone(.13, .22, 112, 'square', .07); },
+  miss() { tone(0, .22, 330, 'triangle', .07); tone(.09, .3, 247, 'triangle', .06); },
+  end() { [392, 523.25, 659.25].forEach((f, i) => tone(i * .24, .9, f, 'sine', .12)); }
+};
+const muteBtn = $('#mute');
+function syncMute() { muteBtn.textContent = muted ? 'SOUND OFF' : 'SOUND ON'; muteBtn.setAttribute('aria-pressed', String(muted)); }
+muteBtn.addEventListener('click', () => {
+  muted = !muted; syncMute();
+  try { localStorage.setItem('sr-muted', muted ? '1' : '0'); } catch (e) {}
+  if (!muted) ac();
+});
+syncMute();
+
+/* ---------- spawning ---------- */
+function progress() { return G ? G.t / DUR : 0; }
+function spawnVisitor() {
+  const free = SLOTS.filter(s => !s.v); if (!free.length) return;
+  const active = SLOTS.length - free.length, p = progress();
+  if (active >= (playing ? Math.round(4 + 5 * p) : 4)) return;
+  const sl = pick(free);
+  let type;
+  if (Math.random() < .34) type = Math.random() < .4 ? 'camera' : 'quiet';
+  else { const q = Math.random(); type = q < .32 ? 'laugh' : q < .72 ? 'talk' : 'phone'; }
+  const dis = type !== 'quiet' && type !== 'camera';
+  sl.v = {
+    type, dis, state: 'up', pop: 0, t: 0, age: 0, t2: 0,
+    life: dis ? lerp(2.9, 1.55, p) * rand(.9, 1.1) : rand(2.0, 2.8),
+    look: mkLook(), text: dis ? pick(LINES[type]) : '', react: ''
+  };
+}
+function spawnCrosser() {
+  const p = progress();
+  crossers.push({
+    x: rand(110, 690), y: CROSS_START, s: .95, t: 0, t2: 0, pop: 0, alpha: 1, state: 'walk',
+    dur: lerp(3.4, 2.3, p), look: mkLook(), text: pick(LINES.cross), react: ''
+  });
+}
+
+/* ---------- game flow ---------- */
+function newGame() {
+  G = { t: 0, score: 0, streak: 0, best: 0, silence: 100, hushed: 0, missed: 0, wrong: 0, spawnT: .5, crossT: rand(8, 11) };
+  SLOTS.forEach(s => s.v = null); crossers = []; floats = []; yellMsg = null;
+}
+function start() {
+  ac(); newGame(); playing = true;
+  $('#ovStart').hidden = true; $('#ovEnd').hidden = true; $('#hud').classList.remove('off');
+  showPanel('pIntro');
+}
+function end(cause) {
+  if (!playing) return;
+  playing = false;
+  SLOTS.forEach(s => { if (s.v) s.v.state = 'leaving'; });
+  crossers.forEach(c => c.state = 'back');
+  $('#hud').classList.add('off');
+  sfx.end();
+  const rank = RANKS.filter(r => G.score >= r[0]).pop();
+  $('#eKicker').textContent = cause === 'silence' ? 'The ceremony was disrupted' : 'Your watch is relieved';
+  $('#eHead').textContent = cause === 'silence' ? 'Silence broken' : 'The guard is changed';
+  $('#eScore').textContent = G.score.toLocaleString();
+  $('#eRank').textContent = rank[1];
+  $('#eLine').textContent = rank[2];
+  $('#sHushed').textContent = G.hushed; $('#sMissed').textContent = G.missed;
+  $('#sWrong').textContent = G.wrong; $('#sStreak').textContent = G.best;
+  const fs = FACTS.slice().sort(() => Math.random() - .5).slice(0, 3);
+  $('#facts').innerHTML = '';
+  fs.forEach(f => { const li = document.createElement('li'); li.textContent = f; $('#facts').appendChild(li); });
+  setTimeout(() => { $('#ovEnd').hidden = false; }, 700);
+  showPanel('pResult');
+}
+function showPanel(id) {
+  ['pIntro', 'pResult'].forEach(p => $('#' + p).hidden = p !== id);
+  postHeight();
+}
+$('#btnStart').addEventListener('click', start);
+$('#btnAgain').addEventListener('click', start);
+
+function float(x, y, text, color) { floats.push({ x, y, text, color, t: 0 }); }
+function yell(cross) {
+  const quick = clock - lastYell < 3.2;
+  const text = cross
+    ? (quick ? 'Behind the chains!' : 'It is requested that all visitors remain behind the chains and rails.')
+    : (quick ? pick(['Silence and respect.', 'Silence, please.']) : 'It is requested that all visitors maintain an atmosphere of silence and respect at all times.');
+  yellMsg = { text, t: 0, life: quick ? 1.4 : 2.8 };
+  lastYell = clock;
+  Sen.halt = Math.max(Sen.halt, quick ? 1.2 : 2.0);
+}
+function headTop(o) { // o = visitor in slot
+  const R = ROWS[o.ri], h = 118 * R.s;
+  return R.y + (1 - o.v.pop) * h - 108 * R.s;
+}
+function hush(target, kind) {
+  const o = target;
+  o.state = 'hushed'; o.t2 = 0; o.react = pick(SORRY);
+  G.streak++; G.best = Math.max(G.best, G.streak);
+  const mult = G.streak >= 10 ? 3 : G.streak >= 5 ? 2 : 1;
+  const base = kind === 'cross' ? 300 : o.type === 'phone' ? 150 : 100;
+  const pts = base * mult;
+  G.score += pts; G.hushed++; G.silence = Math.min(100, G.silence + 3);
+  const [fx, fy] = kind === 'cross' ? [o.x, o.y - 160 * o.s] : [o._x, o._y];
+  float(fx, fy, '+' + pts + (mult > 1 ? ' ×' + mult : ''), '#ffd34d');
+  yell(kind === 'cross');
+  sfx.heel();
+}
+function scoldWrong(v, x, y) {
+  v.state = 'hushed'; v.t2 = 0; v.react = '?!'; v.wronged = true;
+  G.wrong++; G.streak = 0; G.score = Math.max(0, G.score - 50); G.silence -= 6;
+  float(x, y, v.type === 'camera' ? 'QUIET PHOTOS ARE OK  −50' : 'THEY WERE QUIET  −50', '#ff9f43');
+  sfx.wrong();
+  if (G.silence <= 0) { G.silence = 0; end('silence'); }
+}
+function miss(x, y, pen) {
+  G.missed++; G.streak = 0; G.silence -= pen;
+  float(x, y, 'NOISE!', '#ff6b5b');
+  sfx.miss();
+  if (G.silence <= 0) { G.silence = 0; end('silence'); }
+}
+
+/* ---------- input ---------- */
+function hitAt(px, py) {
+  const cs = crossers.filter(c => c.state === 'walk').sort((a, b) => b.y - a.y);
+  for (const c of cs) {
+    if (Math.abs(px - c.x) < 34 * c.s + 10 && py > c.y - 160 * c.s && py < c.y + 6) return { kind: 'cross', o: c };
+  }
+  for (let ri = 2; ri >= 0; ri--) {
+    const R = ROWS[ri];
+    for (const sl of SLOTS) {
+      if (sl.ri !== ri || !sl.v || sl.v.state !== 'up' || sl.v.pop < .5) continue;
+      if (Math.abs(px - sl.x) < 46 * R.s + 8 && py < R.y + 6 && py > R.y - 132 * R.s) return { kind: 'vis', o: sl };
+    }
+  }
+  return null;
+}
+let down = false;
+function tapAt(e) {
+  const r = cv.getBoundingClientRect();
+  const px = (e.clientX - r.left) / r.width * W, py = (e.clientY - r.top) / r.height * H;
+  const h = hitAt(px, py); if (!h) return;
+  if (h.kind === 'cross') { hush(h.o, 'cross'); return; }
+  const sl = h.o, v = sl.v, y = headTop(sl);
+  if (v.dis) { v._x = sl.x; v._y = y; hush(v, 'vis'); }
+  else scoldWrong(v, sl.x, y);
+}
+cv.addEventListener('pointerdown', e => {
+  if (!playing) return;
+  e.preventDefault(); down = true;
+  try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+  tapAt(e);
+});
+cv.addEventListener('pointermove', e => { if (playing && down) tapAt(e); });
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => cv.addEventListener(t, () => down = false));
+
+/* ---------- update ---------- */
+function update(dt) {
+  clock += dt;
+  // sentinel
+  if (Sen.halt > 0) Sen.halt -= dt;
+  else if (Sen.mode === 'walk') {
+    Sen.x += Sen.dir * 66 * dt; Sen.phase += dt * 6.2;
+    if ((Sen.dir > 0 && Sen.x >= MAT_R) || (Sen.dir < 0 && Sen.x <= MAT_L)) {
+      Sen.x = Sen.dir > 0 ? MAT_R : MAT_L; Sen.mode = 'pause'; Sen.t = 1.8; Sen.phase = 0;
+    }
+  } else { Sen.t -= dt; if (Sen.t <= 0) { Sen.dir *= -1; Sen.mode = 'walk'; } }
+
+  if (playing) {
+    G.t += dt;
+    const p = progress();
+    G.spawnT -= dt;
+    if (G.spawnT <= 0) { spawnVisitor(); G.spawnT = lerp(1.0, .42, p) * rand(.75, 1.25); }
+    G.crossT -= dt;
+    if (G.crossT <= 0) { spawnCrosser(); G.crossT = lerp(11, 5.5, p) * rand(.8, 1.2); }
+    G.silence = Math.min(100, G.silence + dt * 1.2);
+    if (G.t >= DUR) { G.t = DUR; end('time'); }
+  } else {
+    idleSpawn -= dt;
+    if (idleSpawn <= 0) { spawnVisitor(); idleSpawn = rand(.6, 1.3); }
+  }
+
+  for (const sl of SLOTS) {
+    const v = sl.v; if (!v) continue;
+    v.t += dt;
+    if (v.state === 'up') {
+      v.pop = Math.min(1, v.pop + dt * 7); v.age += dt;
+      if (v.age >= v.life) {
+        if (playing && v.dis) miss(sl.x, headTop(sl), v.type === 'phone' ? 15 : 12);
+        v.state = 'leaving';
+      }
+    } else if (v.state === 'hushed') {
+      v.t2 += dt; if (v.t2 > .8) v.state = 'leaving';
+    } else {
+      v.pop -= dt * 5; if (v.pop <= 0) sl.v = null;
+    }
+  }
+
+  for (const c of crossers) {
+    c.t += dt;
+    if (c.state === 'walk') {
+      c.pop = Math.min(1, c.pop + dt * 4);
+      c.y += (CROSS_END - CROSS_START) / c.dur * dt;
+      c.s = lerp(.95, 1.08, (c.y - CROSS_START) / (CROSS_END - CROSS_START));
+      if (c.y >= CROSS_END) {
+        c.state = 'reached'; c.t2 = 0; c.react = 'oh—sorry!';
+        if (playing) { miss(c.x, c.y - 160 * c.s, 25); yell(true); }
+      }
+    } else if (c.state === 'hushed' || c.state === 'reached') {
+      c.t2 += dt; if (c.t2 > .6) c.state = 'back';
+    } else {
+      c.y -= dt * 80; c.alpha -= dt * 2.2;
+    }
+  }
+  crossers = crossers.filter(c => c.alpha > 0);
+
+  floats.forEach(f => f.t += dt);
+  floats = floats.filter(f => f.t < 1);
+  if (yellMsg) { yellMsg.t += dt; if (yellMsg.t >= yellMsg.life) yellMsg = null; }
+}
+
+/* ---------- drawing: scene ---------- */
+function drawBackground() {
+  let g = ctx.createLinearGradient(0, 0, 0, 110);
+  g.addColorStop(0, '#8fb6dc'); g.addColorStop(1, '#dfe8ee');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, 112);
+  // Washington Monument
+  ctx.fillStyle = '#ece6da';
+  ctx.beginPath(); ctx.moveTo(604, 106); ctx.lineTo(616, 106); ctx.lineTo(613.5, 40); ctx.lineTo(610, 32); ctx.lineTo(606.5, 40); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,.08)'; ctx.fillRect(610, 40, 4, 66);
+  // Capitol dome, far
+  ctx.fillStyle = '#e6e0d4';
+  ctx.beginPath(); ctx.arc(724, 98, 10, Math.PI, 0); ctx.fill(); ctx.fillRect(712, 97, 24, 8); ctx.fillRect(722.5, 82, 3, 7);
+  // distant trees
+  ctx.fillStyle = '#7d9a78';
+  for (let x = -20; x < W + 40; x += 34) { ctx.beginPath(); ctx.arc(x, 104 + Math.sin(x) * 3, 20 + (x * 7 % 9), Math.PI, 0); ctx.fill(); }
+  // hedge
+  ctx.fillStyle = '#4f6b4a'; ctx.fillRect(0, 104, W, 18);
+  ctx.fillStyle = '#5c7a56';
+  for (let x = 0; x < W; x += 22) { ctx.beginPath(); ctx.arc(x + 11, 106, 11, Math.PI, 0); ctx.fill(); }
+  // steps
+  ctx.fillStyle = '#e6e2d9'; ctx.fillRect(0, 120, W, 210);
+  ROWS.forEach(R => {
+    ctx.fillStyle = '#f5f2eb'; ctx.fillRect(0, R.y - 3, W, 3);
+    ctx.fillStyle = '#cfc8ba'; ctx.fillRect(0, R.y, W, 13);
+    ctx.fillStyle = 'rgba(0,0,0,.06)'; ctx.fillRect(0, R.y + 13, W, 4);
+  });
+  // plaza
+  g = ctx.createLinearGradient(0, 329, 0, H);
+  g.addColorStop(0, '#d9d4c9'); g.addColorStop(1, '#cbc5b8');
+  ctx.fillStyle = g; ctx.fillRect(0, 329, W, H - 329);
+  ctx.strokeStyle = 'rgba(80,70,55,.09)'; ctx.lineWidth = 1;
+  [370, 404, 452, 500].forEach(y => { ctx.beginPath(); ctx.moveTo(0, y + .5); ctx.lineTo(W, y + .5); ctx.stroke(); });
+  for (let i = -6; i <= 6; i++) { ctx.beginPath(); ctx.moveTo(400 + i * 70, 329); ctx.lineTo(400 + i * 110, H); ctx.stroke(); }
+  // mat
+  ctx.fillStyle = '#1f1f22'; rr(MAT_L - 46, 423, MAT_R - MAT_L + 92, 15, 4); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fillRect(MAT_L - 42, 424, MAT_R - MAT_L + 84, 2);
+}
+function drawChain() {
+  const posts = []; for (let x = 30; x <= 770; x += 92.5) posts.push(x);
+  ctx.strokeStyle = '#3a3630'; ctx.lineWidth = 2.2;
+  for (let i = 0; i < posts.length - 1; i++) {
+    const a = posts[i], b = posts[i + 1];
+    ctx.beginPath(); ctx.moveTo(a, 330); ctx.quadraticCurveTo((a + b) / 2, 346, b, 330); ctx.stroke();
+  }
+  posts.forEach(x => {
+    ctx.fillStyle = '#2b2925'; ctx.fillRect(x - 3, 326, 6, 34);
+    ctx.fillStyle = '#b8963a'; ctx.beginPath(); ctx.arc(x, 325, 4.5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#2b2925'; ctx.fillRect(x - 7, 358, 14, 4);
+  });
+}
+function drawTomb() {
+  ctx.fillStyle = 'rgba(0,0,0,.1)'; ctx.fillRect(176, 546, 448, 6);
+  ctx.fillStyle = '#c9c2b4'; ctx.fillRect(172, 548, 456, 12);
+  const g = ctx.createLinearGradient(0, 476, 0, 548);
+  g.addColorStop(0, '#f8f6f0'); g.addColorStop(1, '#d8d1c3');
+  ctx.fillStyle = g; ctx.fillRect(205, 476, 390, 72);
+  ctx.fillStyle = '#ebe6dc'; ctx.fillRect(194, 463, 412, 14);
+  ctx.fillStyle = '#f7f4ee'; ctx.fillRect(194, 463, 412, 3);
+  ctx.fillStyle = 'rgba(110,100,85,.22)'; ctx.fillRect(194, 476, 412, 3);
+  ctx.strokeStyle = 'rgba(120,108,90,.28)'; ctx.lineWidth = 1; ctx.strokeRect(224.5, 485.5, 351, 55);
+  ctx.fillStyle = '#857b6a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '700 12.5px "Libre Baskerville", Georgia, serif';
+  ['HERE RESTS IN HONORED GLORY', 'AN AMERICAN SOLDIER', 'KNOWN BUT TO GOD'].forEach((t, i) => ctx.fillText(t, 400, 499 + i * 15.5));
+}
+
+/* ---------- drawing: people ---------- */
+function arm(pts, color, lw) {
+  ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.stroke();
+}
+function hand(x, y, skin) { ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(x, y, 5.5, 0, 7); ctx.fill(); }
+function phoneAt(x, y, lit) {
+  ctx.fillStyle = '#111'; rr(x, y, 10, 17, 2); ctx.fill();
+  if (lit) { ctx.fillStyle = '#9fe0ff'; ctx.fillRect(x + 1.5, y + 2, 7, 12); }
+}
+
+// pose: quiet | camera | laugh | talk | phone | cross ; state: up | hushed | leaving | walk | reached | back
+function person(L, pose, state, t, wronged) {
+  const live = state === 'up' || state === 'walk';
+  const sh = L.shirt;
+  // torso
+  ctx.fillStyle = sh; rr(-27, -68, 54, 80, 14); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,.08)'; rr(-27, -40, 54, 52, 14); ctx.fill();
+  ctx.fillStyle = L.skin; ctx.fillRect(-6, -77, 12, 11);
+  const sleeve = shade(sh, -18);
+  // arms
+  if (!live || pose === 'quiet') {
+    arm([[-22, -60], [-27, -40], [-6, -31]], sleeve, 11); arm([[22, -60], [27, -40], [6, -31]], sleeve, 11);
+    hand(-4, -31, L.skin); hand(4, -31, L.skin);
+  } else if (pose === 'camera') {
+    arm([[-22, -60], [-24, -44], [-12, -50]], sleeve, 11); arm([[22, -60], [24, -44], [12, -50]], sleeve, 11);
+    ctx.strokeStyle = '#222'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-12, -60); ctx.lineTo(0, -74); ctx.lineTo(12, -60); ctx.stroke();
+    ctx.fillStyle = '#2d2d2d'; rr(-16, -61, 32, 20, 3); ctx.fill();
+    ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(0, -51, 7, 0, 7); ctx.fill();
+    ctx.fillStyle = '#9ec9e8'; ctx.beginPath(); ctx.arc(0, -51, 3.5, 0, 7); ctx.fill();
+    hand(-15, -50, L.skin); hand(15, -50, L.skin);
+  } else if (pose === 'laugh') {
+    const k = Math.sin(t * 20) * 2;
+    arm([[-22, -60], [-30, -38], [-10, -24 + k]], sleeve, 11); arm([[22, -60], [30, -38], [10, -24 - k]], sleeve, 11);
+    hand(-10, -24 + k, L.skin); hand(10, -24 - k, L.skin);
+  } else if (pose === 'talk') {
+    const k = Math.sin(t * 9);
+    arm([[-22, -60], [-27, -40], [-6, -31]], sleeve, 11); hand(-5, -31, L.skin);
+    const hx = 44 + k * 4, hy = -66 + k * 6;
+    arm([[22, -60], [38, -46], [hx, hy]], sleeve, 11); hand(hx, hy, L.skin);
+  } else if (pose === 'phone') {
+    arm([[-22, -60], [-27, -40], [-6, -31]], sleeve, 11); hand(-5, -31, L.skin);
+    arm([[22, -60], [30, -66], [17, -86]], sleeve, 11);
+    phoneAt(11, -101, true); hand(17, -86, L.skin);
+  } else if (pose === 'cross') {
+    arm([[-22, -60], [-27, -40], [-24, -20]], sleeve, 11); hand(-24, -20, L.skin);
+    arm([[22, -60], [34, -80], [40, -100]], sleeve, 11);
+    phoneAt(35, -120, true); hand(40, -100, L.skin);
+  }
+  // head
+  ctx.save(); ctx.translate(0, -89);
+  let tilt = 0;
+  if (live && pose === 'laugh') tilt = -.18 + Math.sin(t * 20) * .06;
+  if (live && pose === 'talk') tilt = Math.sin(t * 5) * .1;
+  if (state === 'hushed' || state === 'reached') tilt = .12;
+  ctx.rotate(tilt);
+  if (L.hair === 'long') { ctx.fillStyle = L.hc; rr(-17, -10, 34, 34, 10); ctx.fill(); }
+  ctx.fillStyle = L.skin; ctx.beginPath(); ctx.arc(0, 0, 15, 0, 7); ctx.fill();
+  ctx.fillStyle = L.hc;
+  if (L.hair === 'short' || L.hair === 'long' || L.hair === 'bun') { ctx.beginPath(); ctx.ellipse(0, -5, 16, 11, 0, Math.PI, 0); ctx.fill(); }
+  if (L.hair === 'bun') { ctx.beginPath(); ctx.arc(0, -19, 7, 0, 7); ctx.fill(); }
+  if (L.hair === 'curly') { for (let i = 0; i < 7; i++) { const a = Math.PI + i * Math.PI / 6; ctx.beginPath(); ctx.arc(Math.cos(a) * 13, Math.sin(a) * 12 - 2, 6, 0, 7); ctx.fill(); } }
+  if (L.hair === 'cap') {
+    ctx.fillStyle = L.cap; ctx.beginPath(); ctx.ellipse(0, -5, 16, 12, 0, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = shade(L.cap, -25); rr(2, -7, 22, 5, 2); ctx.fill();
+  }
+  // face
+  const dark = '#2a1d17';
+  ctx.fillStyle = dark; ctx.strokeStyle = dark; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+  if (live && pose === 'laugh') {
+    [-5.5, 5.5].forEach(x => { ctx.beginPath(); ctx.arc(x, 0, 3, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke(); });
+    ctx.fillStyle = '#5a1a1a'; ctx.beginPath(); ctx.arc(0, 4, 6.5, 0, Math.PI); ctx.fill();
+  } else if (state === 'hushed' || state === 'reached') {
+    [-5.5, 5.5].forEach(x => { ctx.beginPath(); ctx.arc(x, -1, 2.3, 0, 7); ctx.fill(); });
+    if (wronged) {
+      ctx.beginPath(); ctx.moveTo(-8, -7); ctx.lineTo(-3, -8); ctx.moveTo(3, -8); ctx.lineTo(8, -7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-4, 8); ctx.lineTo(4, 8); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(0, 8, 2.2, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(230,60,60,.45)'; [-9, 9].forEach(x => { ctx.beginPath(); ctx.arc(x, 4, 3.6, 0, 7); ctx.fill(); });
+    }
+  } else {
+    [-5.5, 5.5].forEach(x => { ctx.beginPath(); ctx.arc(x, -1, 1.9, 0, 7); ctx.fill(); });
+    if (live && (pose === 'talk' || pose === 'phone')) {
+      const m = 1.2 + 2.6 * Math.abs(Math.sin(t * 13));
+      ctx.fillStyle = '#5a1a1a'; ctx.beginPath(); ctx.ellipse(0, 7, 3.8, m, 0, 0, 7); ctx.fill();
+    } else if (live && pose === 'cross') {
+      ctx.beginPath(); ctx.arc(0, 5, 4.5, .2, Math.PI - .2); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.moveTo(-3.5, 7); ctx.lineTo(3.5, 7); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const c = v => Math.max(0, Math.min(255, v + amt));
+  return 'rgb(' + c(n >> 16) + ',' + c((n >> 8) & 255) + ',' + c(n & 255) + ')';
+}
+function drawVisitors(ri) {
+  const R = ROWS[ri], h = 118 * R.s;
+  for (const sl of SLOTS) {
+    if (sl.ri !== ri || !sl.v) continue;
+    const v = sl.v;
+    let bob = 0;
+    if (v.state === 'up' && v.type === 'laugh') bob = -Math.abs(Math.sin(v.t * 20)) * 3;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(sl.x - 70, 0, 140, R.y); ctx.clip();
+    ctx.translate(sl.x, R.y + (1 - v.pop) * h + bob * R.s);
+    ctx.scale(R.s, R.s);
+    person(v.look, v.type, v.state, v.t, v.wronged);
+    ctx.restore();
+  }
+}
+function drawCrosser(c) {
+  ctx.save(); ctx.globalAlpha = Math.max(0, c.alpha) * Math.min(1, c.pop * 1.5);
+  ctx.translate(c.x, c.y); ctx.scale(c.s, c.s);
+  ctx.fillStyle = 'rgba(0,0,0,.15)'; ctx.beginPath(); ctx.ellipse(0, 0, 20, 4, 0, 0, 7); ctx.fill();
+  const a = c.state === 'walk' ? Math.sin(c.t * 9) * .3 : 0;
+  [[-8, a], [8, -a]].forEach(([x, ang]) => {
+    ctx.save(); ctx.translate(x, -44); ctx.rotate(ang);
+    ctx.fillStyle = '#3d4a5c'; rr(-6, 0, 12, 42, 4); ctx.fill();
+    ctx.fillStyle = '#f2f2f2'; rr(-6, 38, 16, 7, 3); ctx.fill();
+    ctx.restore();
+  });
+  ctx.translate(0, -40);
+  person(c.look, 'cross', c.state, c.t, false);
+  ctx.restore();
+}
+
+/* ---------- drawing: sentinel ---------- */
+const NAVY = '#1c2541', TROUSER = '#3b5687', GOLDC = '#d4a72c', GLOVE = '#fbfbf8', SKIN_S = '#d9a77f';
+function drawSentinel() {
+  ctx.save(); ctx.translate(Sen.x, SEN_Y);
+  ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.beginPath(); ctx.ellipse(0, 3, 26, 5, 0, 0, 7); ctx.fill();
+  ctx.scale(1.08, 1.08);
+  if (Sen.halt > 0) sentinelBack();
+  else { ctx.scale(Sen.dir, 1); sentinelSide(); }
+  ctx.restore();
+}
+function sentinelSide() {
+  const walking = Sen.mode === 'walk';
+  const a = walking ? Math.sin(Sen.phase) * .3 : 0;
+  ctx.translate(0, walking ? -Math.abs(Math.sin(Sen.phase)) * 2 : 0);
+  const leg = (ang, col) => {
+    ctx.save(); ctx.translate(0, -56); ctx.rotate(ang);
+    ctx.fillStyle = col; ctx.fillRect(-6, 0, 12, 52);
+    ctx.fillStyle = GOLDC; ctx.fillRect(-1, 0, 2.2, 50);
+    ctx.fillStyle = '#080808'; rr(-6, 50, 20, 7, 3); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(4, 51, 6, 1.5);
+    ctx.restore();
+  };
+  leg(-a, '#2f4672'); leg(a, TROUSER);
+  ctx.fillStyle = NAVY; rr(-13, -103, 26, 52, 5); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.fillRect(4, -100, 3, 46);
+  ctx.fillStyle = '#b8222a'; ctx.fillRect(3, -93, 5, 3); ctx.fillStyle = '#2d6cc0'; ctx.fillRect(8, -93, 4, 3);
+  ctx.fillStyle = GOLDC; ctx.fillRect(4, -88, 7, 2);
+  // rifle on shoulder
+  const B = [13, -64], M = [-17, -156], P = [B[0] + (M[0] - B[0]) * .42, B[1] + (M[1] - B[1]) * .42];
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#6b3e1f'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(B[0], B[1]); ctx.lineTo(P[0], P[1]); ctx.stroke();
+  ctx.strokeStyle = '#1e1e1e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(P[0], P[1]); ctx.lineTo(M[0], M[1]); ctx.stroke();
+  // arm
+  ctx.strokeStyle = shade('#1c2541', 10); ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(-1, -97); ctx.lineTo(4, -78); ctx.lineTo(11, -67); ctx.stroke();
+  ctx.fillStyle = GLOVE; ctx.beginPath(); ctx.arc(13, -64, 5, 0, 7); ctx.fill();
+  // head
+  ctx.fillStyle = SKIN_S; ctx.fillRect(-4, -111, 8, 9);
+  ctx.beginPath(); ctx.arc(0, -118, 10, 0, 7); ctx.fill();
+  ctx.fillStyle = '#111'; ctx.fillRect(3, -121, 8, 4);
+  ctx.fillStyle = NAVY; ctx.beginPath(); ctx.ellipse(1, -130, 13, 4.5, 0, 0, 7); ctx.fill();
+  ctx.fillRect(-9, -130, 19, 8);
+  ctx.strokeStyle = GOLDC; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(-9, -124); ctx.lineTo(10, -124); ctx.stroke();
+  ctx.fillStyle = '#050505'; ctx.beginPath(); ctx.moveTo(9, -123); ctx.lineTo(19, -120.5); ctx.lineTo(9, -120); ctx.closePath(); ctx.fill();
+}
+function sentinelBack() {
+  ctx.fillStyle = TROUSER; ctx.fillRect(-12, -56, 10, 54); ctx.fillRect(2, -56, 10, 54);
+  ctx.fillStyle = GOLDC; ctx.fillRect(-12, -56, 2, 52); ctx.fillRect(10, -56, 2, 52);
+  ctx.fillStyle = '#080808'; rr(-13, -4, 12, 7, 3); ctx.fill(); rr(1, -4, 12, 7, 3); ctx.fill();
+  ctx.fillStyle = NAVY; rr(-17, -104, 34, 54, 6); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(-.5, -96, 1, 44);
+  // rifle on right shoulder
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#6b3e1f'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(20, -62); ctx.lineTo(17, -100); ctx.stroke();
+  ctx.strokeStyle = '#1e1e1e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(17, -100); ctx.lineTo(13, -158); ctx.stroke();
+  ctx.fillStyle = shade('#1c2541', 10);
+  rr(-23, -100, 8, 42, 4); ctx.fill(); rr(15, -100, 8, 38, 4); ctx.fill();
+  ctx.fillStyle = GLOVE; ctx.beginPath(); ctx.arc(-19, -56, 5, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(20, -60, 5, 0, 7); ctx.fill();
+  ctx.fillStyle = SKIN_S; ctx.fillRect(-5, -113, 10, 10);
+  ctx.beginPath(); ctx.arc(-11, -119, 3, 0, 7); ctx.arc(11, -119, 3, 0, 7); ctx.fill();
+  ctx.fillStyle = '#2a1d14'; ctx.beginPath(); ctx.arc(0, -119, 11, 0, 7); ctx.fill();
+  ctx.fillStyle = NAVY; ctx.beginPath(); ctx.ellipse(0, -132, 15, 5, 0, 0, 7); ctx.fill();
+  ctx.fillRect(-11, -132, 22, 9);
+  ctx.strokeStyle = GOLDC; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(-11, -125); ctx.lineTo(11, -125); ctx.stroke();
+}
+
+/* ---------- drawing: overlays ---------- */
+function bubble(cx, by, text, o) {
+  o = o || {};
+  const size = o.size || 14;
+  ctx.font = '600 ' + size + 'px Oswald, "Arial Narrow", sans-serif';
+  const w = ctx.measureText(text).width + 18, h = size + 12;
+  const x = Math.max(6, Math.min(W - w - 6, cx - w / 2)), y = by - h - 9;
+  ctx.fillStyle = o.bg || '#fff'; ctx.strokeStyle = o.border || '#16181e'; ctx.lineWidth = o.lw || 2;
+  rr(x, y, w, h, 8); ctx.fill(); ctx.stroke();
+  const tx = Math.max(x + 10, Math.min(x + w - 10, cx));
+  ctx.beginPath(); ctx.moveTo(tx - 6, y + h - 1); ctx.lineTo(tx + 1, y + h + 8); ctx.lineTo(tx + 5, y + h - 1); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(tx - 6, y + h); ctx.lineTo(tx + 1, y + h + 8); ctx.lineTo(tx + 5, y + h); ctx.stroke();
+  ctx.fillStyle = o.fg || '#16181e'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, x + w / 2, y + h / 2 + 1);
+}
+function drawBubbles() {
+  for (const sl of SLOTS) {
+    const v = sl.v; if (!v || v.pop < .6) continue;
+    const s = ROWS[sl.ri].s, y = headTop(sl), size = Math.round(11 + 4 * s);
+    if (v.state === 'up' && v.dis) {
+      const urgent = playing && v.age > v.life * .62;
+      const o = { size, border: urgent ? '#d0261c' : '#16181e', lw: urgent ? 3 : 2 };
+      if (v.type === 'phone') { o.bg = '#fff3b0'; }
+      if (v.type === 'laugh') { o.fg = '#b3261e'; }
+      bubble(sl.x, y, v.text, o);
+    } else if (v.state === 'hushed') {
+      bubble(sl.x, y, v.react, { size: size - 1, bg: v.wronged ? '#ffe0c2' : '#eef2f7', fg: '#555', border: '#888', lw: 1.5 });
+    }
+  }
+  for (const c of crossers) {
+    if (c.pop < .6 || c.state === 'back') continue;
+    const y = c.y - 160 * c.s;
+    if (c.state === 'walk') bubble(c.x, y, c.text, { size: 15, border: '#d0261c', lw: 3 });
+    else bubble(c.x, y, c.state === 'hushed' ? c.react : 'oh—sorry!', { size: 14, bg: '#eef2f7', fg: '#555', border: '#888', lw: 1.5 });
+  }
+}
+function wrap(text, maxW) {
+  const words = text.split(' '), lines = []; let cur = '';
+  for (const w of words) {
+    const t = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+function drawYell() {
+  if (!yellMsg) return;
+  const a = Math.min(1, yellMsg.t / .12, (yellMsg.life - yellMsg.t) / .3);
+  ctx.save(); ctx.globalAlpha = Math.max(0, a);
+  ctx.font = '600 19px Oswald, "Arial Narrow", sans-serif';
+  const lines = wrap(yellMsg.text.toUpperCase(), 520);
+  const lw = Math.max(...lines.map(l => ctx.measureText(l).width));
+  const bw = Math.max(260, lw + 44), bh = lines.length * 24 + 36;
+  const x0 = W / 2 - bw / 2, y0 = H - bh - 10;
+  ctx.fillStyle = 'rgba(18,26,48,.95)'; ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 2;
+  rr(x0, y0, bw, bh, 6); ctx.fill(); ctx.stroke();
+  const tx = Math.max(x0 + 20, Math.min(x0 + bw - 20, Sen.x));
+  ctx.beginPath(); ctx.moveTo(tx - 9, y0 + 1); ctx.lineTo(tx, y0 - 11); ctx.lineTo(tx + 9, y0 + 1); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(tx - 9, y0); ctx.lineTo(tx, y0 - 11); ctx.lineTo(tx + 9, y0); ctx.stroke();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#c9a227'; ctx.font = '600 11px Oswald, sans-serif';
+  ctx.fillText('S E N T I N E L', W / 2, y0 + 15);
+  ctx.fillStyle = '#fff'; ctx.font = '600 19px Oswald, "Arial Narrow", sans-serif';
+  lines.forEach((l, i) => ctx.fillText(l, W / 2, y0 + 36 + i * 24));
+  ctx.restore();
+}
+function drawFloats() {
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '700 21px Oswald, sans-serif'; ctx.lineJoin = 'round';
+  for (const f of floats) {
+    ctx.globalAlpha = 1 - f.t;
+    const y = f.y - 30 - f.t * 34;
+    ctx.strokeStyle = 'rgba(10,12,20,.8)'; ctx.lineWidth = 5; ctx.strokeText(f.text, f.x, y);
+    ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, y);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function render() {
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  drawBackground();
+  drawVisitors(0); drawVisitors(1); drawVisitors(2);
+  drawChain();
+  crossers.slice().sort((a, b) => a.y - b.y).forEach(drawCrosser);
+  drawSentinel();
+  drawTomb();
+  drawBubbles();
+  drawYell();
+  drawFloats();
+}
+
+/* ---------- HUD ---------- */
+const hTime = $('#hTime'), hScore = $('#hScore'), hMult = $('#mult'), meterBar = $('#meterBar');
+function hud() {
+  if (!G) return;
+  hTime.textContent = Math.ceil(DUR - G.t);
+  hScore.textContent = G.score.toLocaleString();
+  const m = G.streak >= 10 ? 3 : G.streak >= 5 ? 2 : 1;
+  hMult.textContent = m > 1 ? '×' + m : '';
+  meterBar.style.width = Math.max(0, G.silence) + '%';
+  meterBar.style.background = G.silence > 55 ? '#7fd18b' : G.silence > 28 ? '#f5c451' : '#ff6b5b';
+}
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  update(dt);
+  render();
+  if (playing) hud();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ---------- iframe auto-height (optional for the host page) ---------- */
+function postHeight() {
+  try {
+    if (window.parent !== window) window.parent.postMessage({ type: 'silence-respect-height', height: document.documentElement.scrollHeight }, '*');
+  } catch (e) {}
+}
+addEventListener('load', postHeight);
+addEventListener('resize', postHeight);
+document.querySelector('details').addEventListener('toggle', postHeight);
+})();
+</script>
+</body>
+</html>
