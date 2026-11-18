@@ -18,6 +18,13 @@ html,body{margin:0;background:var(--paper);color:var(--ink);font-family:'Oswald'
 button{font:inherit;cursor:pointer}
 #app{max-width:800px;margin:0 auto;background:var(--paper)}
 
+/* ---------- headline ---------- */
+#intro{padding:24px 20px 20px}
+#intro .kick{font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:#9a7614;margin:0 0 10px}
+#intro .hed{font-family:'Libre Baskerville',Georgia,serif;font-weight:700;font-size:clamp(24px,4.6vw,36px);line-height:1.18;color:var(--navy);margin:0 0 16px}
+#intro p{font-family:'Libre Baskerville',Georgia,serif;font-size:16px;line-height:1.7;color:#2a2c33;margin:0 0 12px}
+#intro p:last-child{margin-bottom:0}
+
 /* ---------- stage ---------- */
 #stage{position:relative;aspect-ratio:10/7;overflow:hidden;background:#cfd8e3;container-type:inline-size;
   touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -82,6 +89,12 @@ details .prose{margin-top:12px}
 </head>
 <body>
 <div id="app">
+  <header id="intro">
+    <div class="kick">Interactive · Arlington National Cemetery</div>
+    <h1 class="hed">Can You Keep the Silence at the Tomb of the Unknown Soldier?</h1>
+    <p>Every minute of every day since 1937, a Sentinel from the Army’s 3rd U.S. Infantry Regiment has walked the mat in front of the Tomb of the Unknown Soldier. Signs on the plaza ask the crowd for one thing — silence and respect — and when visitors forget, the Sentinel will stop the walk and remind them out loud.</p>
+    <p>In this game, you are that Sentinel. Tap the visitors who laugh, chat, take phone calls or step over the chain, but leave the quiet mourners and photographers alone. Watch for the VIP who wants to give a speech: he’s slippery, and silencing him is worth big points. Hold the crowd for one 60-second watch.</p>
+  </header>
   <div id="stage">
     <canvas id="cv" aria-label="Game scene: the Tomb of the Unknown Soldier with a Sentinel walking the mat and visitors on the plaza steps"></canvas>
 
