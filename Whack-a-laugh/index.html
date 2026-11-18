@@ -62,6 +62,8 @@ h3{font-weight:600;letter-spacing:.25em;text-transform:uppercase;font-size:15px;
 .legend strong{display:block;letter-spacing:.2em;text-transform:uppercase;font-size:13px;margin-bottom:4px}
 .legend .tap strong{color:var(--red)}
 .legend .leave strong{color:var(--ok)}
+.legend .vip{grid-column:1/-1;order:2;border-color:var(--gold);background:#fffaf0}
+.legend .vip strong{color:#9a7614}
 .legend span{font-family:'Libre Baskerville',Georgia,serif;font-size:13.5px;color:#444;line-height:1.5}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 18px}
 @media (max-width:520px){.stats{grid-template-columns:repeat(2,1fr)}}
@@ -115,6 +117,7 @@ details .prose{margin-top:12px}
       <h3>How to stand your watch</h3>
       <div class="legend">
         <div class="tap"><strong>Tap or swipe</strong><span>Visitors who laugh, chat, take loud phone calls — or step over the chain toward the mat.</span></div>
+        <div class="vip"><strong>★ The VIP</strong><span>A suited big shot with slicked-back hair who wants to give a speech. He ducks and pops up somewhere new — hit him 3 times before he gets away for a huge bonus.</span></div>
         <div class="leave"><strong>Leave alone</strong><span>Quiet visitors and quiet photographers. Scolding them costs you points and composure.</span></div>
       </div>
       <div class="prose">
@@ -288,7 +291,7 @@ function spawnCrosser() {
 
 /* ---------- game flow ---------- */
 function newGame() {
-  G = { t: 0, score: 0, streak: 0, best: 0, silence: 100, hushed: 0, missed: 0, wrong: 0, spawnT: .5, crossT: rand(8, 11) };
+  G = { t: 0, score: 0, streak: 0, best: 0, silence: 100, hushed: 0, missed: 0, wrong: 0, spawnT: .5, crossT: rand(8, 11), bossT: rand(13, 17), boss: null };
   SLOTS.forEach(s => s.v = null); crossers = []; floats = []; yellMsg = null;
 }
 function start() {
@@ -365,6 +368,55 @@ function miss(x, y, pen) {
   if (G.silence <= 0) { G.silence = 0; end('silence'); }
 }
 
+/* ---------- the VIP (boss) ---------- */
+const BOSS_LINES = ['Do you know who I am?', 'Quick speech, folks!', 'Tremendous crowd!', 'VIP coming through!', 'Get my good side!'];
+const BOSS_HP = 3, BOSS_HOPS = 6, BOSS_PTS = 1500;
+function startBoss() {
+  G.boss = { hp: BOSS_HP, hops: BOSS_HOPS, wait: 0, last: null };
+  float(400, 150, 'VIP INCOMING!', '#ffd34d');
+  placeBoss();
+}
+function placeBoss() {
+  const b = G.boss;
+  const free = SLOTS.filter(s => !s.v && s !== b.last);
+  if (!free.length) { b.wait = .2; return; }
+  const sl = pick(free);
+  b.last = sl; b.hops--;
+  sl.v = {
+    type: 'boss', boss: true, dis: true, state: 'up', pop: 0, t: 0, age: 0, t2: 0,
+    life: lerp(1.25, .85, progress()), look: null, text: pick(BOSS_LINES), react: ''
+  };
+}
+function bossDucked() { // boss left a slot without being silenced
+  const b = G.boss; if (!b) return;
+  if (b.hops > 0) { b.wait = .4; return; }
+  G.boss = null; G.bossT = rand(16, 22);
+  G.missed++; G.streak = 0; G.silence -= 20;
+  float(400, 200, 'THE VIP GOT AWAY!', '#ff6b5b');
+  sfx.miss();
+  if (G.silence <= 0) { G.silence = 0; end('silence'); }
+}
+function hitBoss(sl) {
+  const b = G.boss, v = sl.v, y = headTop(sl);
+  b.hp--;
+  if (b.hp > 0) { // ducks and pops up somewhere else
+    v.state = 'leaving'; v.fast = true;
+    b.hops++; b.wait = .35;
+    G.score += 150;
+    float(sl.x, y, '+150  ' + b.hp + ' MORE!', '#ffd34d');
+    sfx.heel();
+    return;
+  }
+  v.state = 'hushed'; v.t2 = 0; v.react = '…fine.';
+  G.streak++; G.best = Math.max(G.best, G.streak);
+  const mult = G.streak >= 10 ? 3 : G.streak >= 5 ? 2 : 1, pts = BOSS_PTS * mult;
+  G.score += pts; G.hushed++; G.silence = Math.min(100, G.silence + 15);
+  float(sl.x, y, '+' + pts.toLocaleString() + '  VIP SILENCED', '#ffd34d');
+  lastYell = -99; yell(false);
+  sfx.heel();
+  G.boss = null; G.bossT = rand(16, 22);
+}
+
 /* ---------- input ---------- */
 function hitAt(px, py) {
   const cs = crossers.filter(c => c.state === 'walk').sort((a, b) => b.y - a.y);
@@ -387,7 +439,8 @@ function tapAt(e) {
   const h = hitAt(px, py); if (!h) return;
   if (h.kind === 'cross') { hush(h.o, 'cross'); return; }
   const sl = h.o, v = sl.v, y = headTop(sl);
-  if (v.dis) { v._x = sl.x; v._y = y; hush(v, 'vis'); }
+  if (v.boss) hitBoss(sl);
+  else if (v.dis) { v._x = sl.x; v._y = y; hush(v, 'vis'); }
   else scoldWrong(v, sl.x, y);
 }
 cv.addEventListener('pointerdown', e => {
@@ -418,6 +471,9 @@ function update(dt) {
     if (G.spawnT <= 0) { spawnVisitor(); G.spawnT = lerp(1.0, .42, p) * rand(.75, 1.25); }
     G.crossT -= dt;
     if (G.crossT <= 0) { spawnCrosser(); G.crossT = lerp(11, 5.5, p) * rand(.8, 1.2); }
+    G.bossT -= dt;
+    if (!G.boss && G.bossT <= 0) startBoss();
+    if (G.boss && G.boss.wait > 0) { G.boss.wait -= dt; if (G.boss.wait <= 0) placeBoss(); }
     G.silence = Math.min(100, G.silence + dt * 1.2);
     if (G.t >= DUR) { G.t = DUR; end('time'); }
   } else {
@@ -430,14 +486,17 @@ function update(dt) {
     v.t += dt;
     if (v.state === 'up') {
       v.pop = Math.min(1, v.pop + dt * 7); v.age += dt;
-      if (v.age >= v.life) {
+      if (v.age >= v.life && v.boss) {
+        v.state = 'leaving'; v.fast = true;
+        if (playing) bossDucked();
+      } else if (v.age >= v.life) {
         if (playing && v.dis) miss(sl.x, headTop(sl), v.type === 'phone' ? 15 : 12);
         v.state = 'leaving';
       }
     } else if (v.state === 'hushed') {
       v.t2 += dt; if (v.t2 > .8) v.state = 'leaving';
     } else {
-      v.pop -= dt * 5; if (v.pop <= 0) sl.v = null;
+      v.pop -= dt * (v.fast ? 10 : 5); if (v.pop <= 0) sl.v = null;
     }
   }
 
@@ -625,6 +684,94 @@ function person(L, pose, state, t, wronged) {
   }
   ctx.restore();
 }
+function personBoss(state, t) {
+  const live = state === 'up';
+  const suit = '#22356b', suitD = '#18264f', skin = '#efcdb3';
+  // jacket
+  ctx.fillStyle = suit; rr(-33, -70, 66, 82, 15); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(-11, -71); ctx.lineTo(11, -71); ctx.lineTo(0, -38); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = suitD;
+  ctx.beginPath(); ctx.moveTo(-12, -71); ctx.lineTo(-1, -38); ctx.lineTo(-7, -35); ctx.lineTo(-22, -60); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(12, -71); ctx.lineTo(1, -38); ctx.lineTo(7, -35); ctx.lineTo(22, -60); ctx.closePath(); ctx.fill();
+  // red tie, blue stripes lined in white
+  ctx.save();
+  ctx.beginPath(); ctx.moveTo(-4, -71); ctx.lineTo(4, -71); ctx.lineTo(3, -64); ctx.lineTo(6, -32); ctx.lineTo(0, -25); ctx.lineTo(-6, -32); ctx.lineTo(-3, -64); ctx.closePath();
+  ctx.fillStyle = '#c8102e'; ctx.fill(); ctx.clip();
+  for (let y = -74; y < -20; y += 9) {
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 4.2; ctx.beginPath(); ctx.moveTo(-8, y + 6); ctx.lineTo(8, y - 2); ctx.stroke();
+    ctx.strokeStyle = '#1b2a6b'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(-8, y + 6); ctx.lineTo(8, y - 2); ctx.stroke();
+  }
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-3, -64); ctx.lineTo(3, -64); ctx.stroke();
+  // American-flag pocket square (wearer's left breast pocket)
+  ctx.fillStyle = suitD; ctx.fillRect(11, -47, 14, 2);
+  const fx = 12, fy = -55;
+  for (let i = 0; i < 4; i++) { ctx.fillStyle = i % 2 ? '#fff' : '#c8102e'; ctx.fillRect(fx, fy + i * 2, 12, 2); }
+  ctx.fillStyle = '#1b2a6b'; ctx.fillRect(fx, fy, 5, 4);
+  ctx.fillStyle = '#fff'; ctx.fillRect(fx + 1, fy + 1, 1, 1); ctx.fillRect(fx + 3, fy + 2, 1, 1);
+  // shield pin on left lapel
+  ctx.beginPath(); ctx.moveTo(12, -66); ctx.lineTo(18, -66); ctx.lineTo(18, -62);
+  ctx.quadraticCurveTo(18, -58.5, 15, -57); ctx.quadraticCurveTo(12, -58.5, 12, -62); ctx.closePath();
+  ctx.fillStyle = '#d4af37'; ctx.fill();
+  ctx.fillStyle = '#1b2a6b'; ctx.fillRect(13.2, -65, 3.6, 2.2);
+  // arms
+  if (live) {
+    const k = Math.sin(t * 10);
+    arm([[22, -60], [28, -40], [10, -32]], suitD, 12); hand(9, -32, skin);
+    const hx = -46 + k * 5, hy = -100 + Math.abs(k) * 3;
+    arm([[-24, -62], [-40, -76], [hx, hy]], suitD, 12); hand(hx, hy, skin);
+  } else {
+    arm([[-24, -60], [-29, -40], [-6, -31]], suitD, 12); arm([[24, -60], [29, -40], [6, -31]], suitD, 12);
+    hand(-4, -31, skin); hand(4, -31, skin);
+  }
+  // head
+  ctx.save(); ctx.translate(0, -90);
+  ctx.rotate(live ? Math.sin(t * 4) * .07 : .12);
+  // ears + square, strong-jawed face
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.ellipse(-15.5, 1, 3.5, 5, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(15.5, 1, 3.5, 5, 0, 0, 7); ctx.fill();
+  rr(-15, -15, 30, 34, 11); ctx.fill();
+  ctx.fillStyle = 'rgba(120,70,40,.12)'; rr(-13, 9, 26, 10, 6); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,70,40,.25)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-3, 17); ctx.quadraticCurveTo(0, 19, 3, 17); ctx.stroke();
+  // thick, dark hair swept straight back with volume on top
+  ctx.fillStyle = '#4a3524';
+  ctx.beginPath(); ctx.moveTo(-16, -1);
+  ctx.quadraticCurveTo(-19, -20, -6, -27);
+  ctx.quadraticCurveTo(9, -33, 17, -21);
+  ctx.quadraticCurveTo(20, -12, 16, -2);
+  ctx.lineTo(14, -7);
+  ctx.quadraticCurveTo(12, -15, 3, -16);
+  ctx.quadraticCurveTo(-7, -16, -12, -11);
+  ctx.quadraticCurveTo(-14, -6, -16, -1);
+  ctx.closePath(); ctx.fill();
+  // grey at the temples
+  ctx.fillStyle = '#a49f95';
+  ctx.beginPath(); ctx.ellipse(-14.3, -5, 2.8, 6, .15, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(14.3, -5, 2.8, 6, -.15, 0, 7); ctx.fill();
+  // swept-back strands + shine
+  ctx.strokeStyle = '#6e5038'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+  [[-9, -16, -4, -27, 8, -28], [-2, -16, 4, -26, 13, -24], [5, -16, 11, -22, 15, -15]].forEach(c => {
+    ctx.beginPath(); ctx.moveTo(c[0], c[1]); ctx.quadraticCurveTo(c[2], c[3], c[4], c[5]); ctx.stroke();
+  });
+  ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 1.3;
+  ctx.beginPath(); ctx.moveTo(-10, -22); ctx.quadraticCurveTo(-2, -29, 8, -27); ctx.stroke();
+  // face
+  const dark = '#2a1d17';
+  ctx.fillStyle = dark; ctx.strokeStyle = '#3a2a1c'; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(-9.5, -6); ctx.lineTo(-3, -6.5); ctx.moveTo(3, -6.5); ctx.lineTo(9.5, -6); ctx.stroke();
+  [-5.5, 5.5].forEach(x => { ctx.beginPath(); ctx.arc(x, -1.5, 1.9, 0, 7); ctx.fill(); });
+  if (live) { // confident, toothy grin while he talks
+    const m = 2.5 + 2.5 * Math.abs(Math.sin(t * 12));
+    ctx.fillStyle = '#5a1a1a'; ctx.beginPath(); ctx.ellipse(0, 8, 6, m, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillRect(-4.5, 8 - m + .6, 9, Math.min(2.4, m));
+  } else {
+    ctx.beginPath(); ctx.arc(0, 8, 2.2, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(230,60,60,.5)'; [-9, 9].forEach(x => { ctx.beginPath(); ctx.arc(x, 4, 3.8, 0, 7); ctx.fill(); });
+  }
+  ctx.restore();
+}
 function shade(hex, amt) {
   const n = parseInt(hex.slice(1), 16);
   const c = v => Math.max(0, Math.min(255, v + amt));
@@ -641,7 +788,8 @@ function drawVisitors(ri) {
     ctx.beginPath(); ctx.rect(sl.x - 70, 0, 140, R.y); ctx.clip();
     ctx.translate(sl.x, R.y + (1 - v.pop) * h + bob * R.s);
     ctx.scale(R.s, R.s);
-    person(v.look, v.type, v.state, v.t, v.wronged);
+    if (v.boss) personBoss(v.state, v.t);
+    else person(v.look, v.type, v.state, v.t, v.wronged);
     ctx.restore();
   }
 }
@@ -748,6 +896,7 @@ function drawBubbles() {
     if (v.state === 'up' && v.dis) {
       const urgent = playing && v.age > v.life * .62;
       const o = { size, border: urgent ? '#d0261c' : '#16181e', lw: urgent ? 3 : 2 };
+      if (v.boss) { o.bg = '#fff7d6'; o.border = '#c9a227'; o.lw = 3; o.fg = '#1c2541'; o.size = size + 1; }
       if (v.type === 'phone') { o.bg = '#fff3b0'; }
       if (v.type === 'laugh') { o.fg = '#b3261e'; }
       bubble(sl.x, y, v.text, o);
