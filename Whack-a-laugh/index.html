@@ -7,22 +7,23 @@
 <meta name="description" content="You are the Sentinel at the Tomb of the Unknown Soldier. Keep the crowd silent and respectful for one 60-second watch.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --navy:#1c2541; --navy2:#121a30; --gold:#c9a227; --paper:#f6f3ec; --ink:#16181e; --muted:#6b6f7a;
-  --red:#b3261e; --line:#d9d3c6; --ok:#2f7d4a;
+  --red:#ba1f1f; --red-dark:#9b1919; --ink:#333; --body:#444; --muted:#595959; --line:#e2e2e2; --soft:#f5f5f5;
+  --bar:#333; --gold:#c9a227; --ok:#2f7d4a;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--paper);color:var(--ink);font-family:'Oswald',system-ui,sans-serif}
+html,body{margin:0;background:#fff;color:var(--ink);font-family:'Open Sans',Helvetica,Arial,sans-serif}
 button{font:inherit;cursor:pointer}
-#app{max-width:800px;margin:0 auto;background:var(--paper)}
+#app{max-width:800px;margin:0 auto;background:#fff}
 
 /* ---------- headline ---------- */
-#intro{padding:24px 20px 20px}
-#intro .kick{font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:#9a7614;margin:0 0 10px}
-#intro .hed{font-family:'Libre Baskerville',Georgia,serif;font-weight:700;font-size:clamp(24px,4.6vw,36px);line-height:1.18;color:var(--navy);margin:0 0 16px}
-#intro p{font-family:'Libre Baskerville',Georgia,serif;font-size:16px;line-height:1.7;color:#2a2c33;margin:0 0 12px}
+#intro{padding:22px 16px 20px}
+#intro .kick{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 10px}
+#intro .kick a,#intro .kick span{color:var(--red);font-weight:700}
+#intro .hed{font-family:'Open Sans',Helvetica,Arial,sans-serif;font-weight:400;font-size:clamp(24px,4.4vw,32px);line-height:1.2;color:var(--ink);margin:0 0 16px}
+#intro p{font-size:16px;line-height:1.7;color:var(--body);margin:0 0 14px}
 #intro p:last-child{margin-bottom:0}
 
 /* ---------- stage ---------- */
@@ -30,8 +31,8 @@ button{font:inherit;cursor:pointer}
   touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
 #hud{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:3cqw;padding:1.3cqw 2cqw 3cqw;
-  background:linear-gradient(rgba(18,26,48,.85),rgba(18,26,48,0));color:#fff;font-size:clamp(11px,2.3cqw,18px);
-  letter-spacing:.12em;pointer-events:none;transition:opacity .3s}
+  background:linear-gradient(rgba(34,34,34,.85),rgba(34,34,34,0));color:#fff;font-family:'Roboto Condensed',sans-serif;
+  font-size:clamp(11px,2.3cqw,18px);letter-spacing:.08em;pointer-events:none;transition:opacity .3s}
 #hud.off{opacity:0}
 #hud span{white-space:nowrap}
 #hud b{font-weight:700;color:#ffd34d}
@@ -39,58 +40,59 @@ button{font:inherit;cursor:pointer}
 #meterWrap{flex:1;display:flex;align-items:center;gap:1.2cqw;justify-content:flex-end}
 #meter{width:min(26cqw,200px);height:1.6cqw;min-height:7px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.55);border-radius:99px;overflow:hidden}
 #meter i{display:block;height:100%;width:100%;background:#7fd18b;transition:width .15s linear,background .3s}
-#mute{position:absolute;right:1.4cqw;bottom:1.4cqw;z-index:3;font-size:clamp(10px,1.8cqw,14px);letter-spacing:.15em;
-  background:rgba(18,26,48,.75);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:4px;padding:.8cqw 1.4cqw}
+#mute{position:absolute;right:1.4cqw;bottom:1.4cqw;z-index:3;font-family:'Roboto Condensed',sans-serif;font-size:clamp(10px,1.8cqw,14px);letter-spacing:.08em;
+  background:rgba(51,51,51,.85);color:#fff;border:0;border-radius:3px;padding:.8cqw 1.4cqw}
 
 .ov{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  text-align:center;padding:4cqw;background:rgba(14,19,34,.78);color:#fff;transition:opacity .35s}
+  text-align:center;padding:4cqw;background:rgba(30,30,30,.78);color:#fff;transition:opacity .35s}
 .ov[hidden]{display:none}
-.ov .kicker{font-size:2.2cqw;letter-spacing:.45em;color:var(--gold);margin:0 0 1.4cqw;text-transform:uppercase}
-.ov h1,.ov h2{font-weight:700;margin:0;line-height:1;letter-spacing:.04em;text-transform:uppercase}
-.ov h1{font-size:9cqw;text-shadow:0 .5cqw 0 rgba(0,0,0,.35)}
-.ov h2{font-size:6.4cqw}
-.ov .rule{width:16cqw;height:.45cqw;background:var(--gold);margin:2.2cqw auto}
-.ov p{font-family:'Libre Baskerville',Georgia,serif;font-size:clamp(12px,2.35cqw,18px);line-height:1.45;max-width:62cqw;margin:0 0 3cqw;color:#e8e6df}
-.ov .score{font-size:11cqw;font-weight:700;color:#ffd34d;line-height:1;margin:1cqw 0 .6cqw}
-.ov .rank{font-size:3cqw;letter-spacing:.3em;text-transform:uppercase;margin:0 0 1.2cqw}
-.go{font-weight:600;font-size:clamp(14px,3cqw,22px);letter-spacing:.3em;text-transform:uppercase;color:#fff;background:var(--navy);
-  border:2px solid var(--gold);padding:1.8cqw 4.5cqw;border-radius:3px;box-shadow:0 .6cqw 0 rgba(0,0,0,.35)}
-.go:hover,.go:focus-visible{background:var(--gold);color:var(--navy);outline:none}
+.ov .kicker{font-family:'Roboto Condensed',sans-serif;font-size:2.4cqw;letter-spacing:.2em;color:#fff;background:var(--red);padding:.5cqw 1.6cqw;margin:0 0 2cqw;text-transform:uppercase}
+.ov h1,.ov h2{font-family:'Roboto Condensed',sans-serif;font-weight:700;margin:0;line-height:1;letter-spacing:.01em;text-transform:uppercase}
+.ov h1{font-size:9.5cqw;text-shadow:0 .4cqw 0 rgba(0,0,0,.35)}
+.ov h2{font-size:6.6cqw}
+.ov .rule{width:14cqw;height:.5cqw;background:var(--red);margin:2.2cqw auto}
+.ov p{font-size:clamp(12px,2.3cqw,17px);line-height:1.5;max-width:62cqw;margin:0 0 3cqw;color:#eee}
+.ov .score{font-family:'Roboto Condensed',sans-serif;font-size:11cqw;font-weight:700;color:#ffd34d;line-height:1;margin:1cqw 0 .6cqw}
+.ov .rank{font-family:'Roboto Condensed',sans-serif;font-size:3.2cqw;letter-spacing:.2em;text-transform:uppercase;margin:0 0 1.2cqw}
+.go{font-family:'Roboto Condensed',sans-serif;font-weight:700;font-size:clamp(14px,3cqw,22px);letter-spacing:.1em;text-transform:uppercase;color:#fff;background:var(--red);
+  border:0;padding:1.8cqw 4.5cqw;border-radius:3px;box-shadow:0 .5cqw 0 var(--red-dark)}
+.go:hover,.go:focus-visible{background:#d42a2a;outline:2px solid #fff;outline-offset:2px}
 
 /* ---------- panel ---------- */
-#panel{padding:22px 20px 26px;border-top:6px solid var(--navy)}
+#panel{padding:22px 16px 26px;border-top:4px solid var(--bar)}
 .scr[hidden]{display:none}
-h3{font-weight:600;letter-spacing:.25em;text-transform:uppercase;font-size:15px;color:var(--navy);margin:0 0 12px}
-.prose{font-family:'Libre Baskerville',Georgia,serif;font-size:15px;line-height:1.65;color:#2a2c33}
+h3{font-family:'Roboto Condensed',sans-serif;font-weight:700;font-size:22px;color:#fff;background:var(--red);
+  margin:0 0 14px;padding:6px 12px;border-bottom:3px solid var(--red-dark)}
+.prose{font-size:15px;line-height:1.7;color:var(--body)}
 .prose p{margin:0 0 12px}
 .legend{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0 18px}
 @media (max-width:520px){.legend{grid-template-columns:1fr}}
-.legend div{border:1px solid var(--line);border-radius:6px;padding:10px 12px;background:#fff}
-.legend strong{display:block;letter-spacing:.2em;text-transform:uppercase;font-size:13px;margin-bottom:4px}
+.legend div{border:1px solid var(--line);border-radius:3px;padding:10px 12px;background:var(--soft)}
+.legend strong{display:block;font-family:'Roboto Condensed',sans-serif;text-transform:uppercase;letter-spacing:.06em;font-size:15px;margin-bottom:4px}
 .legend .tap strong{color:var(--red)}
 .legend .leave strong{color:var(--ok)}
-.legend .vip{grid-column:1/-1;order:2;border-color:var(--gold);background:#fffaf0}
-.legend .vip strong{color:#9a7614}
-.legend span{font-family:'Libre Baskerville',Georgia,serif;font-size:13.5px;color:#444;line-height:1.5}
+.legend span{font-size:14px;color:var(--body);line-height:1.55}
+.legend .vip{grid-column:1/-1;order:2;border-left:4px solid var(--red)}
+.legend .vip strong{color:var(--ink)}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 18px}
 @media (max-width:520px){.stats{grid-template-columns:repeat(2,1fr)}}
-.stats div{background:#fff;border:1px solid var(--line);border-radius:6px;padding:10px 6px;text-align:center}
-.stats small{display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
-.stats b{display:block;font-size:24px;color:var(--navy);margin-top:2px}
+.stats div{background:var(--soft);border:1px solid var(--line);border-radius:3px;padding:10px 6px;text-align:center}
+.stats small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.stats b{display:block;font-family:'Roboto Condensed',sans-serif;font-size:26px;color:var(--ink);margin-top:2px}
 .facts{list-style:none;margin:0 0 18px;padding:0}
-.facts li{font-family:'Libre Baskerville',Georgia,serif;font-size:14.5px;line-height:1.6;padding:10px 0 10px 18px;border-top:1px solid var(--line);position:relative}
-.facts li::before{content:'';position:absolute;left:0;top:19px;width:7px;height:7px;background:var(--gold);transform:rotate(45deg)}
+.facts li{font-size:15px;line-height:1.6;color:var(--body);padding:10px 0 10px 18px;border-bottom:1px solid var(--line);position:relative}
+.facts li::before{content:'';position:absolute;left:2px;top:19px;width:6px;height:6px;background:var(--red)}
 details{border-top:1px solid var(--line);padding-top:14px;margin-top:6px}
-summary{cursor:pointer;letter-spacing:.25em;text-transform:uppercase;font-size:14px;color:var(--navy);font-weight:600}
+summary{cursor:pointer;font-family:'Roboto Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:16px;color:var(--ink)}
 details .prose{margin-top:12px}
-.src{font-family:'Libre Baskerville',Georgia,serif;font-size:12.5px;color:var(--muted);margin:14px 0 0}
-.src a{color:var(--navy)}
+.src{font-size:12.5px;color:var(--muted);margin:14px 0 0}
+.src a{color:var(--red)}
 </style>
 </head>
 <body>
 <div id="app">
   <header id="intro">
-    <div class="kick">Interactive · Arlington National Cemetery</div>
+    <div class="kick"><span>Interactive</span> &nbsp;|&nbsp; Arlington National Cemetery</div>
     <h1 class="hed">Can You Keep the Silence at the Tomb of the Unknown Soldier?</h1>
     <p>Every minute of every day since 1937, a Sentinel from the Army’s 3rd U.S. Infantry Regiment has walked the mat in front of the Tomb of the Unknown Soldier. Signs on the plaza ask the crowd for one thing — silence and respect — and when visitors forget, the Sentinel will stop the walk and remind them out loud.</p>
     <p>In this game, you are that Sentinel. Tap the visitors who laugh, chat, take phone calls or step over the chain, but leave the quiet mourners and photographers alone. Watch for the VIP who wants to give a speech: he’s slippery, and silencing him is worth big points. Hold the crowd for one 60-second watch.</p>
@@ -597,7 +599,7 @@ function drawTomb() {
   ctx.fillStyle = 'rgba(110,100,85,.22)'; ctx.fillRect(194, 476, 412, 3);
   ctx.strokeStyle = 'rgba(120,108,90,.28)'; ctx.lineWidth = 1; ctx.strokeRect(224.5, 485.5, 351, 55);
   ctx.fillStyle = '#857b6a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.font = '700 12.5px "Libre Baskerville", Georgia, serif';
+  ctx.font = '700 12.5px Georgia, "Times New Roman", serif';
   ['HERE RESTS IN HONORED GLORY', 'AN AMERICAN SOLDIER', 'KNOWN BUT TO GOD'].forEach((t, i) => ctx.fillText(t, 400, 499 + i * 15.5));
 }
 
@@ -891,7 +893,7 @@ function sentinelBack() {
 function bubble(cx, by, text, o) {
   o = o || {};
   const size = o.size || 14;
-  ctx.font = '600 ' + size + 'px Oswald, "Arial Narrow", sans-serif';
+  ctx.font = '700 ' + size + 'px "Roboto Condensed", "Arial Narrow", sans-serif';
   const w = ctx.measureText(text).width + 18, h = size + 12;
   const x = Math.max(6, Math.min(W - w - 6, cx - w / 2)), y = by - h - 9;
   ctx.fillStyle = o.bg || '#fff'; ctx.strokeStyle = o.border || '#16181e'; ctx.lineWidth = o.lw || 2;
@@ -937,7 +939,7 @@ function drawYell() {
   if (!yellMsg) return;
   const a = Math.min(1, yellMsg.t / .12, (yellMsg.life - yellMsg.t) / .3);
   ctx.save(); ctx.globalAlpha = Math.max(0, a);
-  ctx.font = '600 19px Oswald, "Arial Narrow", sans-serif';
+  ctx.font = '700 19px "Roboto Condensed", "Arial Narrow", sans-serif';
   const lines = wrap(yellMsg.text.toUpperCase(), 520);
   const lw = Math.max(...lines.map(l => ctx.measureText(l).width));
   const bw = Math.max(260, lw + 44), bh = lines.length * 24 + 36;
@@ -948,15 +950,15 @@ function drawYell() {
   ctx.beginPath(); ctx.moveTo(tx - 9, y0 + 1); ctx.lineTo(tx, y0 - 11); ctx.lineTo(tx + 9, y0 + 1); ctx.closePath(); ctx.fill();
   ctx.beginPath(); ctx.moveTo(tx - 9, y0); ctx.lineTo(tx, y0 - 11); ctx.lineTo(tx + 9, y0); ctx.stroke();
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#c9a227'; ctx.font = '600 11px Oswald, sans-serif';
+  ctx.fillStyle = '#c9a227'; ctx.font = '700 11px "Roboto Condensed", sans-serif';
   ctx.fillText('S E N T I N E L', W / 2, y0 + 15);
-  ctx.fillStyle = '#fff'; ctx.font = '600 19px Oswald, "Arial Narrow", sans-serif';
+  ctx.fillStyle = '#fff'; ctx.font = '700 19px "Roboto Condensed", "Arial Narrow", sans-serif';
   lines.forEach((l, i) => ctx.fillText(l, W / 2, y0 + 36 + i * 24));
   ctx.restore();
 }
 function drawFloats() {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.font = '700 21px Oswald, sans-serif'; ctx.lineJoin = 'round';
+  ctx.font = '700 21px "Roboto Condensed", sans-serif'; ctx.lineJoin = 'round';
   for (const f of floats) {
     ctx.globalAlpha = 1 - f.t;
     const y = f.y - 30 - f.t * 34;
